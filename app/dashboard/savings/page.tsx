@@ -8,6 +8,7 @@ import { getUserGroups } from "../actions/groups";
 import Link from "next/link";
 import { CreateSavingDialog } from "@/components/savings/create-saving-dialog";
 import { CreateGoalDialog } from "@/components/goals/create-goal-dialog";
+import { ManageGoalsDialog } from "@/components/goals/manage-goals-dialog";
 import { SavingsList } from "@/components/savings/savings-list";
 import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { GoalProgressCard } from "@/components/goals/goal-progress-card";
@@ -120,6 +121,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
+              <ManageGoalsDialog goals={goals} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Goal</Button>} />
               <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
             </div>

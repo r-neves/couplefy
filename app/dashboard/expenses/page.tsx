@@ -8,6 +8,7 @@ import { getUserGroups } from "../actions/groups";
 import Link from "next/link";
 import { CreateExpenseDialog } from "@/components/expenses/create-expense-dialog";
 import { CreateCategoryDialog } from "@/components/categories/create-category-dialog";
+import { ManageCategoriesDialog } from "@/components/categories/manage-categories-dialog";
 import { ExpensesList } from "@/components/expenses/expenses-list";
 import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { ExpenseComparisonChart } from "@/components/charts/expense-comparison-chart";
@@ -48,7 +49,6 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
         id: c.id,
         name: c.name,
         color: c.color || "#6366f1",
-        type: c.type,
         groupId: c.groupId,
       }))
     : [];
@@ -153,6 +153,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
+              <ManageCategoriesDialog categories={categories} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Category</Button>} />
               <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
             </div>

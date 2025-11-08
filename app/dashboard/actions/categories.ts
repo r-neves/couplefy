@@ -15,13 +15,12 @@ export async function createCategory(formData: FormData) {
   }
 
   const name = formData.get("name") as string;
-  const type = formData.get("type") as "expense" | "saving" | "both";
   const color = formData.get("color") as string;
   const icon = formData.get("icon") as string || null;
   const groupId = formData.get("groupId") as string || null;
 
-  if (!name || !type) {
-    return { error: "Name and type are required" };
+  if (!name) {
+    return { error: "Name is required" };
   }
 
   try {
@@ -36,7 +35,6 @@ export async function createCategory(formData: FormData) {
     // Create category
     const [category] = await db.insert(categories).values({
       name: name.trim(),
-      type,
       color: color || "#6366f1",
       icon,
       userId: groupId ? null : dbUser.id, // null if group category
@@ -78,28 +76,20 @@ export async function getUserCategories(groupId?: string) {
     let whereCondition;
 
     if (groupId) {
-      // Get group categories and default categories
-      whereCondition = or(
-        eq(categories.groupId, groupId),
-        eq(categories.isDefault, true)
-      );
+      // Get group categories only
+      whereCondition = eq(categories.groupId, groupId);
     } else {
-      // Get personal categories, all shared categories from user's groups, and default categories
+      // Get personal categories and all shared categories from user's groups
       if (userGroupIds.length > 0) {
         whereCondition = or(
           // Personal categories (no groupId, created by user)
           and(eq(categories.userId, dbUser.id), isNull(categories.groupId)),
           // Shared categories (in any of user's groups)
-          inArray(categories.groupId, userGroupIds),
-          // Default categories
-          eq(categories.isDefault, true)
+          inArray(categories.groupId, userGroupIds)
         );
       } else {
-        // User has no groups, only show personal and default categories
-        whereCondition = or(
-          and(eq(categories.userId, dbUser.id), isNull(categories.groupId)),
-          eq(categories.isDefault, true)
-        );
+        // User has no groups, only show personal categories
+        whereCondition = and(eq(categories.userId, dbUser.id), isNull(categories.groupId));
       }
     }
 
@@ -112,6 +102,73 @@ export async function getUserCategories(groupId?: string) {
   } catch (error) {
     console.error("Error getting categories:", error);
     return { error: "Failed to get categories" };
+  }
+}
+
+export async function updateCategory(categoryId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const name = formData.get("name") as string;
+  const color = formData.get("color") as string || "#6366f1";
+
+  if (!name) {
+    return { error: "Category name is required" };
+  }
+
+  try {
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.supabaseId, user.id),
+    });
+
+    if (!dbUser) {
+      return { error: "User not found" };
+    }
+
+    // Verify ownership or group membership
+    const category = await db.query.categories.findFirst({
+      where: eq(categories.id, categoryId),
+    });
+
+    if (!category) {
+      return { error: "Category not found" };
+    }
+
+    // Check if user has permission to edit
+    if (category.userId && category.userId !== dbUser.id) {
+      return { error: "Unauthorized" };
+    }
+
+    if (category.groupId) {
+      const membership = await db.query.groupMembers.findFirst({
+        where: and(
+          eq(groupMembers.groupId, category.groupId),
+          eq(groupMembers.userId, dbUser.id)
+        ),
+      });
+
+      if (!membership) {
+        return { error: "Unauthorized" };
+      }
+    }
+
+    await db.update(categories)
+      .set({
+        name: name.trim(),
+        color,
+        updatedAt: new Date(),
+      })
+      .where(eq(categories.id, categoryId));
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return { error: "Failed to update category" };
   }
 }
 
@@ -141,14 +198,23 @@ export async function deleteCategory(categoryId: string) {
       return { error: "Category not found" };
     }
 
-    if (category.isDefault) {
-      return { error: "Cannot delete default categories" };
+    // Check if user has permission to delete
+    if (category.userId && category.userId !== dbUser.id) {
+      return { error: "You don't have permission to delete this category" };
     }
 
-    if (category.userId !== dbUser.id && category.groupId) {
+    if (category.groupId) {
       // For group categories, verify user is in the group
-      // (simplified - you might want to add proper group membership check)
-      return { error: "You don't have permission to delete this category" };
+      const membership = await db.query.groupMembers.findFirst({
+        where: and(
+          eq(groupMembers.groupId, category.groupId),
+          eq(groupMembers.userId, dbUser.id)
+        ),
+      });
+
+      if (!membership) {
+        return { error: "You don't have permission to delete this category" };
+      }
     }
 
     await db.delete(categories).where(eq(categories.id, categoryId));

@@ -38,7 +38,6 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [type, setType] = useState<"expense" | "saving" | "both">("expense");
-  const [color, setColor] = useState("#6366f1");
   const [groupId, setGroupId] = useState("");
   const router = useRouter();
 
@@ -52,7 +51,6 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
       formData.append("groupId", groupId);
     }
     formData.append("type", type);
-    formData.append("color", color);
 
     const result = await createCategory(formData);
 
@@ -65,17 +63,6 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
       router.refresh();
     }
   }
-
-  const colors = [
-    { value: "#6366f1", label: "Indigo" },
-    { value: "#ec4899", label: "Pink" },
-    { value: "#8b5cf6", label: "Purple" },
-    { value: "#10b981", label: "Green" },
-    { value: "#f59e0b", label: "Amber" },
-    { value: "#ef4444", label: "Red" },
-    { value: "#3b82f6", label: "Blue" },
-    { value: "#06b6d4", label: "Cyan" },
-  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -137,22 +124,14 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
             </div>
 
             <div className="grid gap-2">
-              <Label>Color</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {colors.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setColor(c.value)}
-                    className={`h-10 rounded-md border-2 transition-all ${
-                      color === c.value ? "border-foreground scale-110" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: c.value }}
-                    title={c.label}
-                    disabled={isLoading}
-                  />
-                ))}
-              </div>
+              <Label htmlFor="color">Color</Label>
+              <Input
+                id="color"
+                name="color"
+                type="color"
+                defaultValue="#6366f1"
+                disabled={isLoading}
+              />
             </div>
 
             {error && (
