@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 interface Goal {
   id: string;
@@ -75,8 +76,8 @@ export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>${goalData.currentAmount.toFixed(2)} saved</span>
-                  <span>${targetAmount.toFixed(2)} goal</span>
+                  <span><CurrencyDisplay amount={goalData.currentAmount} /> saved</span>
+                  <span><CurrencyDisplay amount={targetAmount} /> goal</span>
                 </div>
               </div>
             );

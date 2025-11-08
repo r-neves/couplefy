@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EditExpenseDialog } from "./edit-expense-dialog";
 import { DeleteExpenseDialog } from "./delete-expense-dialog";
 import { Pencil, Trash2 } from "lucide-react";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 interface Category {
   id: string;
@@ -112,7 +113,9 @@ export function ExpensesList({
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <div className="text-right">
-                  <p className="text-base sm:text-lg font-semibold whitespace-nowrap">${parseFloat(expense.amount).toFixed(2)}</p>
+                  <p className="text-base sm:text-lg font-semibold whitespace-nowrap">
+                    <CurrencyDisplay amount={parseFloat(expense.amount)} />
+                  </p>
                   {expense.groupId && (
                     <p className="text-xs text-muted-foreground">Shared</p>
                   )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +14,9 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { getCurrencySymbol, isSymbolAfter, type Currency } from "@/lib/utils/currency";
+
+const CURRENCY_KEY = 'couplefy_currency';
 
 ChartJS.register(
   CategoryScale,
@@ -37,6 +41,25 @@ interface MonthlyTrendChartProps {
 }
 
 export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
+  const [currencySymbol, setCurrencySymbol] = useState('€');
+  const [symbolAfter, setSymbolAfter] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CURRENCY_KEY);
+    const currency = (stored && (stored === 'EUR' || stored === 'GBP' || stored === 'USD') ? stored : 'EUR') as Currency;
+    setCurrencySymbol(getCurrencySymbol(currency));
+    setSymbolAfter(isSymbolAfter(currency));
+
+    const handleCurrencyChange = (event: Event) => {
+      const customEvent = event as CustomEvent<Currency>;
+      setCurrencySymbol(getCurrencySymbol(customEvent.detail));
+      setSymbolAfter(isSymbolAfter(customEvent.detail));
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange);
+    return () => window.removeEventListener('currencyChange', handleCurrencyChange);
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
@@ -86,7 +109,10 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
             if (label) {
               label += ": ";
             }
-            label += "$" + context.parsed.y.toFixed(2);
+            const formattedValue = symbolAfter 
+              ? `${context.parsed.y.toFixed(2)}${currencySymbol}` 
+              : `${currencySymbol}${context.parsed.y.toFixed(2)}`;
+            label += formattedValue;
             return label;
           },
         },
@@ -105,7 +131,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
           size: 12,
         },
         formatter: (value: number) => {
-          return '$' + value.toFixed(0);
+          return symbolAfter ? `${value.toFixed(0)}${currencySymbol}` : `${currencySymbol}${value.toFixed(0)}`;
         },
       },
     },
@@ -115,7 +141,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
         ticks: {
           color: isDark ? '#9ca3af' : '#6b7280',
           callback: function (value: any) {
-            return "$" + value;
+            return symbolAfter ? `${value}${currencySymbol}` : `${currencySymbol}${value}`;
           },
         },
         grid: {

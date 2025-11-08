@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,6 +12,9 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { getCurrencySymbol, isSymbolAfter, type Currency } from "@/lib/utils/currency";
+
+const CURRENCY_KEY = 'couplefy_currency';
 
 ChartJS.register(
   CategoryScale,
@@ -31,6 +35,25 @@ export function ExpenseComparisonChart({
   personalTotal,
   sharedTotal,
 }: ExpenseComparisonChartProps) {
+  const [currencySymbol, setCurrencySymbol] = useState('€');
+  const [symbolAfter, setSymbolAfter] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CURRENCY_KEY);
+    const currency = (stored && (stored === 'EUR' || stored === 'GBP' || stored === 'USD') ? stored : 'EUR') as Currency;
+    setCurrencySymbol(getCurrencySymbol(currency));
+    setSymbolAfter(isSymbolAfter(currency));
+
+    const handleCurrencyChange = (event: Event) => {
+      const customEvent = event as CustomEvent<Currency>;
+      setCurrencySymbol(getCurrencySymbol(customEvent.detail));
+      setSymbolAfter(isSymbolAfter(customEvent.detail));
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange);
+    return () => window.removeEventListener('currencyChange', handleCurrencyChange);
+  }, []);
+
   const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   const chartData = {
@@ -70,7 +93,10 @@ export function ExpenseComparisonChart({
             if (label) {
               label += ": ";
             }
-            label += "$" + context.parsed.y.toFixed(2);
+            const formattedValue = symbolAfter 
+              ? `${context.parsed.y.toFixed(2)}${currencySymbol}` 
+              : `${currencySymbol}${context.parsed.y.toFixed(2)}`;
+            label += formattedValue;
             return label;
           },
         },
@@ -84,7 +110,7 @@ export function ExpenseComparisonChart({
           size: 13,
         },
         formatter: (value: number) => {
-          return '$' + value.toFixed(2);
+          return symbolAfter ? `${value.toFixed(2)}${currencySymbol}` : `${currencySymbol}${value.toFixed(2)}`;
         },
       },
     },
@@ -94,7 +120,7 @@ export function ExpenseComparisonChart({
         ticks: {
           color: isDark ? '#9ca3af' : '#6b7280',
           callback: function (value: any) {
-            return "$" + value;
+            return symbolAfter ? `${value}${currencySymbol}` : `${currencySymbol}${value}`;
           },
         },
         grid: {

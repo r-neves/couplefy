@@ -14,6 +14,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Check } from "lucide-react";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -81,6 +83,7 @@ export default async function DashboardPage() {
               <div className="text-sm text-muted-foreground hidden sm:block truncate max-w-[150px] md:max-w-none">
                 {user.email}
               </div>
+              <SettingsDialog />
               <ThemeToggle />
               <SignOutButton />
             </div>
@@ -171,7 +174,7 @@ export default async function DashboardPage() {
                 <CardDescription>Track your spending</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${totalExpenses.toFixed(2)}</div>
+                <div className="text-3xl font-bold"><CurrencyDisplay amount={totalExpenses} /></div>
                 <p className="text-sm text-muted-foreground mt-2">This month</p>
               </CardContent>
             </Card>
@@ -184,7 +187,7 @@ export default async function DashboardPage() {
                 <CardDescription>Your savings progress</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${totalSavings.toFixed(2)}</div>
+                <div className="text-3xl font-bold"><CurrencyDisplay amount={totalSavings} /></div>
                 <p className="text-sm text-muted-foreground mt-2">This month</p>
               </CardContent>
             </Card>

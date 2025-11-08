@@ -1,10 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { getCurrencySymbol, isSymbolAfter, type Currency } from "@/lib/utils/currency";
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
+
+const CURRENCY_KEY = 'couplefy_currency';
 
 interface CategoryData {
   name: string;
@@ -17,6 +21,25 @@ interface CategoryBreakdownChartProps {
 }
 
 export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
+  const [currencySymbol, setCurrencySymbol] = useState('€');
+  const [symbolAfter, setSymbolAfter] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CURRENCY_KEY);
+    const currency = (stored && (stored === 'EUR' || stored === 'GBP' || stored === 'USD') ? stored : 'EUR') as Currency;
+    setCurrencySymbol(getCurrencySymbol(currency));
+    setSymbolAfter(isSymbolAfter(currency));
+
+    const handleCurrencyChange = (event: Event) => {
+      const customEvent = event as CustomEvent<Currency>;
+      setCurrencySymbol(getCurrencySymbol(customEvent.detail));
+      setSymbolAfter(isSymbolAfter(customEvent.detail));
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange);
+    return () => window.removeEventListener('currencyChange', handleCurrencyChange);
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] text-muted-foreground">
@@ -62,7 +85,8 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
             const value = context.parsed || 0;
             const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+            const formattedValue = symbolAfter ? `${value.toFixed(2)}${currencySymbol}` : `${currencySymbol}${value.toFixed(2)}`;
+            return `${label}: ${formattedValue} (${percentage}%)`;
           },
         },
       },
@@ -75,7 +99,8 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
         formatter: (value: number, context: any) => {
           const percentage = ((value / total) * 100);
           // Only show label if slice is larger than 5% to avoid clutter
-          return percentage > 5 ? `$${value.toFixed(0)}` : '';
+          if (percentage <= 5) return '';
+          return symbolAfter ? `${value.toFixed(0)}${currencySymbol}` : `${currencySymbol}${value.toFixed(0)}`;
         },
       },
     },

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EditSavingDialog } from "./edit-saving-dialog";
 import { DeleteSavingDialog } from "./delete-saving-dialog";
 import { Pencil, Trash2 } from "lucide-react";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 interface Goal {
   id: string;
@@ -113,7 +114,9 @@ export function SavingsList({
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-right mr-2">
-                  <p className="text-lg font-semibold">${parseFloat(saving.amount).toFixed(2)}</p>
+                  <p className="text-lg font-semibold">
+                    <CurrencyDisplay amount={parseFloat(saving.amount)} />
+                  </p>
                   {saving.groupId && (
                     <p className="text-xs text-muted-foreground">Shared</p>
                   )}

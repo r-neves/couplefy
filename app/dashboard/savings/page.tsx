@@ -14,6 +14,8 @@ import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-c
 import { GoalProgressCard } from "@/components/goals/goal-progress-card";
 import { MonthSelector } from "@/components/filters/month-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 interface SavingsPageProps {
   searchParams: Promise<{ year?: string; month?: string }>;
@@ -120,6 +122,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <h1 className="text-xl sm:text-2xl font-bold">Savings</h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <SettingsDialog />
               <ThemeToggle />
               <ManageGoalsDialog goals={goals} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Goal</Button>} />
@@ -142,7 +145,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <CardDescription>All goals combined</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">${totalSavings.toFixed(2)}</div>
+              <div className="text-3xl font-bold"><CurrencyDisplay amount={totalSavings} /></div>
               <p className="text-sm text-muted-foreground mt-2">
                 {savings.length} transaction{savings.length !== 1 ? 's' : ''}
               </p>

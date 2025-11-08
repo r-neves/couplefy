@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { deleteGoal, updateGoal } from "@/app/dashboard/actions/goals";
 import { Pencil, Trash2 } from "lucide-react";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -99,7 +100,9 @@ export function ManageGoalsDialog({ goals, groups, trigger }: ManageGoalsDialogP
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{goal.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {goal.targetAmount ? `Target: $${parseFloat(goal.targetAmount).toFixed(2)}` : "No target set"}
+                      {goal.targetAmount ? (
+                        <>Target: <CurrencyDisplay amount={parseFloat(goal.targetAmount)} /></>
+                      ) : "No target set"}
                       {" • "}
                       {goal.groupId
                         ? groups.find(g => g.id === goal.groupId)?.name || "Shared"

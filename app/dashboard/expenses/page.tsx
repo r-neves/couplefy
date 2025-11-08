@@ -15,6 +15,8 @@ import { ExpenseComparisonChart } from "@/components/charts/expense-comparison-c
 import { PersonBreakdownChart } from "@/components/charts/person-breakdown-chart";
 import { MonthSelector } from "@/components/filters/month-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { CurrencyDisplay } from "@/components/ui/currency-display";
 
 interface ExpensesPageProps {
   searchParams: Promise<{ year?: string; month?: string }>;
@@ -162,6 +164,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <h1 className="text-xl sm:text-2xl font-bold">Expenses</h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <SettingsDialog />
               <ThemeToggle />
               <ManageCategoriesDialog categories={categories} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Category</Button>} />
@@ -186,7 +189,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Personal</span>
                 <div className="text-right">
-                  <div className="font-semibold">${personalTotal.toFixed(2)}</div>
+                  <div className="font-semibold"><CurrencyDisplay amount={personalTotal} /></div>
                   <div className="text-xs text-muted-foreground">
                     {personalExpenses.length} transaction{personalExpenses.length !== 1 ? 's' : ''}
                   </div>
@@ -196,7 +199,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                 <div key={group.groupId} className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">{group.groupName}</span>
                   <div className="text-right">
-                    <div className="font-semibold">${group.total.toFixed(2)}</div>
+                    <div className="font-semibold"><CurrencyDisplay amount={group.total} /></div>
                     <div className="text-xs text-muted-foreground">
                       {group.count} transaction{group.count !== 1 ? 's' : ''}
                     </div>
@@ -206,7 +209,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <div className="pt-3 border-t flex justify-between items-center">
                 <span className="font-medium">Total</span>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">${totalExpenses.toFixed(2)}</div>
+                  <div className="text-2xl font-bold"><CurrencyDisplay amount={totalExpenses} /></div>
                   <div className="text-sm text-muted-foreground">
                     {totalTransactionCount} transaction{totalTransactionCount !== 1 ? 's' : ''}
                   </div>
