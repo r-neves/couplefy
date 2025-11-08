@@ -10,7 +10,6 @@ interface Category {
   id: string;
   name: string;
   color: string | null;
-  type: string;
   icon?: string | null;
 }
 
@@ -57,7 +56,6 @@ interface ExpensesListProps {
     id: string;
     name: string;
     color: string;
-    type: string;
     groupId: string | null;
   }>;
   groups: Array<{

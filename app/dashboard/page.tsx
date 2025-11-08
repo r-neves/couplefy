@@ -8,9 +8,12 @@ import { InviteDialog } from "@/components/groups/invite-dialog";
 import { getUserGroups } from "./actions/groups";
 import { getExpenses } from "./actions/expenses";
 import { getSavings } from "./actions/savings";
+import { getUserCategories } from "./actions/categories";
+import { getUserGoals } from "./actions/goals";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Check } from "lucide-react";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -36,13 +39,34 @@ export default async function DashboardPage() {
   const savingsResult = await getSavings({ startDate: startOfMonth, endDate: endOfMonth });
   const savingsData = savingsResult.success ? savingsResult.savings : [];
 
+  // Get categories and goals
+  const categoriesResult = await getUserCategories();
+  const categories = categoriesResult.success ? categoriesResult.categories : [];
+
+  const goalsResult = await getUserGoals();
+  const goals = goalsResult.success ? goalsResult.goals : [];
+
   // Calculate totals
   const personalExpenses = expenses.filter(e => !e.groupId);
-  const sharedExpenses = expenses.filter(e => e.groupId);
   const personalExpensesTotal = personalExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-  const sharedExpensesTotal = sharedExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  
+  // Calculate group-specific expenses
+  const groupExpenseTotals = userGroups.map(group => ({
+    groupId: group.id,
+    groupName: group.name,
+    total: expenses
+      .filter(e => e.groupId === group.id)
+      .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+  }));
 
+  const totalExpenses = personalExpensesTotal + groupExpenseTotals.reduce((sum, g) => sum + g.total, 0);
   const totalSavings = savingsData.reduce((sum, s) => sum + parseFloat(s.amount), 0);
+
+  // Check getting started steps completion
+  const hasJoinedGroup = userGroups.length > 0;
+  const hasSetupCategories = categories.length > 0 || goals.length > 0;
+  const hasStartedTracking = expenses.length > 0 || savingsData.length > 0;
+  const allStepsCompleted = hasJoinedGroup && hasSetupCategories && hasStartedTracking;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-950 dark:via-slate-900 dark:to-gray-900">
@@ -71,32 +95,83 @@ export default async function DashboardPage() {
             Welcome back, {user.user_metadata?.full_name || user.email?.split("@")[0]}!
           </h2>
           <p className="text-muted-foreground">
-            Manage your expenses and savings together
+            Manage your personal and shared life in one place.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/dashboard/expenses">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        {!allStepsCompleted && (
+          <div className="mt-8">
+            <Card>
               <CardHeader>
-                <CardTitle>Personal Expenses</CardTitle>
-                <CardDescription>Track your personal spending</CardDescription>
+                <CardTitle>Getting Started</CardTitle>
+                <CardDescription>Complete these steps to set up your Couplefy account</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">${personalExpensesTotal.toFixed(2)}</div>
-                <p className="text-sm text-muted-foreground mt-2">This month</p>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className={`rounded-full p-2 flex items-center justify-center w-8 h-8 flex-shrink-0 ${
+                    hasJoinedGroup 
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" 
+                      : "bg-primary/10 text-primary"
+                  }`}>
+                    {hasJoinedGroup ? <Check className="h-4 w-4" /> : "1"}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`font-semibold ${hasJoinedGroup ? "line-through text-muted-foreground" : ""}`}>
+                      Create or Join a group
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Create a new group or accept an invitation from a partner
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`rounded-full p-2 flex items-center justify-center w-8 h-8 flex-shrink-0 ${
+                    hasSetupCategories 
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" 
+                      : "bg-primary/10 text-primary"
+                  }`}>
+                    {hasSetupCategories ? <Check className="h-4 w-4" /> : "2"}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`font-semibold ${hasSetupCategories ? "line-through text-muted-foreground" : ""}`}>
+                      Set up categories or goals
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Create custom categories for your expenses or goals for your savings
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`rounded-full p-2 flex items-center justify-center w-8 h-8 flex-shrink-0 ${
+                    hasStartedTracking 
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" 
+                      : "bg-primary/10 text-primary"
+                  }`}>
+                    {hasStartedTracking ? <Check className="h-4 w-4" /> : "3"}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`font-semibold ${hasStartedTracking ? "line-through text-muted-foreground" : ""}`}>
+                      Start tracking
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Add your first expense or savings entry
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </Link>
+          </div>
+        )}
 
+        <div className="grid gap-6 md:grid-cols-2">
           <Link href="/dashboard/expenses">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle>Shared Expenses</CardTitle>
-                <CardDescription>Track spending with your partner</CardDescription>
+                <CardTitle>Expenses</CardTitle>
+                <CardDescription>Track your spending</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${sharedExpensesTotal.toFixed(2)}</div>
+                <div className="text-3xl font-bold">${totalExpenses.toFixed(2)}</div>
                 <p className="text-sm text-muted-foreground mt-2">This month</p>
               </CardContent>
             </Card>
@@ -110,7 +185,7 @@ export default async function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">${totalSavings.toFixed(2)}</div>
-                <p className="text-sm text-muted-foreground mt-2">Total saved</p>
+                <p className="text-sm text-muted-foreground mt-2">This month</p>
               </CardContent>
             </Card>
           </Link>
@@ -174,44 +249,6 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-              <CardDescription>Here's some first steps to set up your Couplefy account</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-2 text-primary">1</div>
-                <div>
-                  <h3 className="font-semibold">Create or Join a group</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create a new group or accept an invitation from a partner
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-2 text-primary">2</div>
-                <div>
-                  <h3 className="font-semibold">Set up categories</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create custom categories for your expenses or goals for your savings
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-2 text-primary">3</div>
-                <div>
-                  <h3 className="font-semibold">Start tracking</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Add your first expense or savings entry
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

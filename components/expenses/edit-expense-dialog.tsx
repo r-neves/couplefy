@@ -27,7 +27,6 @@ interface Category {
   id: string;
   name: string;
   color: string;
-  type: string;
   groupId: string | null;
 }
 
@@ -86,11 +85,8 @@ export function EditExpenseDialog({
   const [paidById, setPaidById] = useState(expense.userId);
   const router = useRouter();
 
-  // Filter categories based on type (expense/both) and selected group
+  // Filter categories based on selected group
   const expenseCategories = categories.filter(c => {
-    const isExpenseType = c.type === "expense" || c.type === "both";
-    if (!isExpenseType) return false;
-
     // If personal is selected, show only personal categories (no groupId)
     if (!groupId) {
       return c.groupId === null;

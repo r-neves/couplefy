@@ -67,10 +67,20 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
   // Calculate totals
   const personalExpenses = expenses.filter(e => !e.groupId);
-  const sharedExpenses = expenses.filter(e => e.groupId);
-
   const personalTotal = personalExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-  const sharedTotal = sharedExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+  // Calculate group-specific expenses
+  const groupExpenseTotals = groupsWithMembers.map(group => ({
+    groupId: group.id,
+    groupName: group.name,
+    total: expenses
+      .filter(e => e.groupId === group.id)
+      .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+    count: expenses.filter(e => e.groupId === group.id).length,
+  }));
+
+  const totalExpenses = personalTotal + groupExpenseTotals.reduce((sum, g) => sum + g.total, 0);
+  const totalTransactionCount = personalExpenses.length + groupExpenseTotals.reduce((sum, g) => sum + g.count, 0);
 
   // Calculate category breakdown
   const categoryBreakdown = expenses.reduce((acc, expense) => {
@@ -166,33 +176,45 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Expenses</CardTitle>
-              <CardDescription>This month</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">${personalTotal.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {personalExpenses.length} transaction{personalExpenses.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Shared Expenses</CardTitle>
-              <CardDescription>This month</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">${sharedTotal.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {sharedExpenses.length} transaction{sharedExpenses.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Expenses Overview</CardTitle>
+            <CardDescription>This month</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Personal</span>
+                <div className="text-right">
+                  <div className="font-semibold">${personalTotal.toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {personalExpenses.length} transaction{personalExpenses.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
+              {groupExpenseTotals.map(group => (
+                <div key={group.groupId} className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{group.groupName}</span>
+                  <div className="text-right">
+                    <div className="font-semibold">${group.total.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {group.count} transaction{group.count !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-3 border-t flex justify-between items-center">
+                <span className="font-medium">Total</span>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">${totalExpenses.toFixed(2)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {totalTransactionCount} transaction{totalTransactionCount !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Visualizations */}
         {expenses.length > 0 && (
@@ -211,15 +233,21 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
             <Card>
               <CardHeader>
-                <CardTitle>Personal vs Shared</CardTitle>
+                <CardTitle>Expense Distribution</CardTitle>
                 <CardDescription>
-                  Comparison for this month
+                  Personal and group expenses
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ExpenseComparisonChart
-                  personalTotal={personalTotal}
-                  sharedTotal={sharedTotal}
+                <CategoryBreakdownChart 
+                  data={[
+                    { name: "Personal", total: personalTotal, color: "#6366f1" },
+                    ...groupExpenseTotals.map((g, i) => ({
+                      name: g.groupName,
+                      total: g.total,
+                      color: ["#ec4899", "#8b5cf6", "#10b981", "#f59e0b"][i % 4],
+                    })),
+                  ].filter(d => d.total > 0)}
                 />
               </CardContent>
             </Card>
