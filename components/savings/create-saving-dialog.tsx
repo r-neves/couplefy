@@ -24,11 +24,11 @@ import {
 import { createSaving } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 
-interface Category {
+interface Goal {
   id: string;
   name: string;
   color: string;
-  type: string;
+  targetAmount: string | null;
   groupId: string | null;
 }
 
@@ -52,34 +52,31 @@ interface GroupWithMembers {
 }
 
 interface CreateSavingDialogProps {
-  categories: Category[];
+  goals: Goal[];
   groups: Group[];
   groupsWithMembers: GroupWithMembers[];
   currentUserId: string;
   trigger?: React.ReactNode;
 }
 
-export function CreateSavingDialog({ categories, groups, groupsWithMembers, currentUserId, trigger }: CreateSavingDialogProps) {
+export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUserId, trigger }: CreateSavingDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [goalId, setGoalId] = useState("");
   const [groupId, setGroupId] = useState("");
   const [paidById, setPaidById] = useState(currentUserId);
   const router = useRouter();
 
-  // Filter categories based on type (saving/both) and selected group
-  const savingCategories = categories.filter(c => {
-    const isSavingType = c.type === "saving" || c.type === "both";
-    if (!isSavingType) return false;
-
-    // If personal is selected, show only personal categories (no groupId)
+  // Filter goals based on selected group
+  const availableGoals = goals.filter(g => {
+    // If personal is selected, show only personal goals (no groupId)
     if (!groupId) {
-      return c.groupId === null;
+      return g.groupId === null;
     }
 
-    // If a group is selected, show only categories for that group
-    return c.groupId === groupId;
+    // If a group is selected, show only goals for that group
+    return g.groupId === groupId;
   });
 
   // Reset paidById when currentUserId changes
@@ -87,10 +84,10 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
     setPaidById(currentUserId);
   }, [currentUserId]);
 
-  // Reset paidById and categoryId when group changes
+  // Reset paidById and goalId when group changes
   useEffect(() => {
     setPaidById(currentUserId);
-    setCategoryId(""); // Reset category when type changes
+    setGoalId(""); // Reset goal when type changes
   }, [groupId, currentUserId]);
 
   // Get the selected group's members
@@ -103,7 +100,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    formData.append("categoryId", categoryId);
+    formData.append("goalId", goalId);
     if (groupId) {
       formData.append("groupId", groupId);
       formData.append("paidById", paidById);
@@ -117,7 +114,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
     } else {
       setOpen(false);
       setIsLoading(false);
-      setCategoryId("");
+      setGoalId("");
       setGroupId("");
       setPaidById(currentUserId);
       (e.target as HTMLFormElement).reset();
@@ -163,25 +160,25 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId} disabled={isLoading} required>
+              <Label htmlFor="goal">Goal</Label>
+              <Select value={goalId} onValueChange={setGoalId} disabled={isLoading} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder="Select a goal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {savingCategories.length === 0 ? (
+                  {availableGoals.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
-                      No categories available for this type. Create one first.
+                      No goals available for this type. Create one first.
                     </div>
                   ) : (
-                    savingCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                    availableGoals.map((goal) => (
+                      <SelectItem key={goal.id} value={goal.id}>
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
+                            style={{ backgroundColor: goal.color }}
                           />
-                          {category.name}
+                          {goal.name}
                         </div>
                       </SelectItem>
                     ))
@@ -251,7 +248,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
             )}
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={isLoading || !categoryId}>
+            <Button type="submit" disabled={isLoading || !goalId}>
               {isLoading ? "Adding..." : "Add Saving"}
             </Button>
           </DialogFooter>

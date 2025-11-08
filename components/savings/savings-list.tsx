@@ -6,11 +6,11 @@ import { EditSavingDialog } from "./edit-saving-dialog";
 import { DeleteSavingDialog } from "./delete-saving-dialog";
 import { Pencil, Trash2 } from "lucide-react";
 
-interface Category {
+interface Goal {
   id: string;
   name: string;
   color: string | null;
-  type: string;
+  targetAmount?: string | null;
   icon?: string | null;
 }
 
@@ -41,23 +41,23 @@ interface User {
 interface Saving {
   id: string;
   amount: string;
-  categoryId: string;
+  goalId: string;
   description: string | null;
   date: Date;
   groupId: string | null;
   userId: string;
-  category: Category;
+  goal: Goal;
   group: Group | null;
   user: User;
 }
 
 interface SavingsListProps {
   savings: Saving[];
-  categories: Array<{
+  goals: Array<{
     id: string;
     name: string;
     color: string;
-    type: string;
+    targetAmount: string | null;
     groupId: string | null;
   }>;
   groups: Array<{
@@ -70,7 +70,7 @@ interface SavingsListProps {
 
 export function SavingsList({
   savings,
-  categories,
+  goals,
   groups,
   groupsWithMembers,
   currentUserId,
@@ -95,12 +95,12 @@ export function SavingsList({
               <div className="flex items-center gap-4 flex-1">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                  style={{ backgroundColor: saving.category.color || "#6366f1" }}
+                  style={{ backgroundColor: saving.goal.color || "#10b981" }}
                 >
-                  {saving.category.icon || saving.category.name.charAt(0).toUpperCase()}
+                  {saving.goal.icon || saving.goal.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">{saving.category.name}</p>
+                  <p className="font-medium">{saving.goal.name}</p>
                   {saving.description && (
                     <p className="text-sm text-muted-foreground">{saving.description}</p>
                   )}
@@ -141,7 +141,7 @@ export function SavingsList({
       {editingSaving && (
         <EditSavingDialog
           saving={editingSaving}
-          categories={categories}
+          goals={goals}
           groups={groups}
           groupsWithMembers={groupsWithMembers}
           currentUserId={currentUserId}
@@ -153,7 +153,7 @@ export function SavingsList({
       {deletingSaving && (
         <DeleteSavingDialog
           savingId={deletingSaving.id}
-          savingDescription={deletingSaving.description || deletingSaving.category.name}
+          savingDescription={deletingSaving.description || deletingSaving.goal.name}
           open={!!deletingSaving}
           onOpenChange={(open) => !open && setDeletingSaving(null)}
         />

@@ -23,11 +23,11 @@ import {
 import { updateSaving } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 
-interface Category {
+interface Goal {
   id: string;
   name: string;
   color: string;
-  type: string;
+  targetAmount: string | null;
   groupId: string | null;
 }
 
@@ -53,7 +53,7 @@ interface GroupWithMembers {
 interface Saving {
   id: string;
   amount: string;
-  categoryId: string;
+  goalId: string;
   description: string | null;
   date: Date;
   groupId: string | null;
@@ -62,7 +62,7 @@ interface Saving {
 
 interface EditSavingDialogProps {
   saving: Saving;
-  categories: Category[];
+  goals: Goal[];
   groups: Group[];
   groupsWithMembers: GroupWithMembers[];
   currentUserId: string;
@@ -72,7 +72,7 @@ interface EditSavingDialogProps {
 
 export function EditSavingDialog({
   saving,
-  categories,
+  goals,
   groups,
   groupsWithMembers,
   currentUserId,
@@ -81,40 +81,31 @@ export function EditSavingDialog({
 }: EditSavingDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [categoryId, setCategoryId] = useState(saving.categoryId);
+  const [goalId, setGoalId] = useState(saving.goalId);
   const [groupId, setGroupId] = useState(saving.groupId || "");
   const [paidById, setPaidById] = useState(saving.userId);
   const router = useRouter();
 
-  // Filter categories based on type (saving/both) and selected group
-  const savingCategories = categories.filter(c => {
-    const isSavingType = c.type === "saving" || c.type === "both";
-    if (!isSavingType) return false;
-
-    // If personal is selected, show only personal categories (no groupId)
+  // Filter goals based on selected group
+  const availableGoals = goals.filter(g => {
+    // If personal is selected, show only personal goals (no groupId)
     if (!groupId) {
-      return c.groupId === null;
+      return g.groupId === null;
     }
 
-    // If a group is selected, show only categories for that group
-    return c.groupId === groupId;
+    // If a group is selected, show only goals for that group
+    return g.groupId === groupId;
   });
 
-  // Reset form when saving changes
+  // Reset paidById when currentUserId changes
   useEffect(() => {
-    setCategoryId(saving.categoryId);
-    setGroupId(saving.groupId || "");
-    setPaidById(saving.userId);
-  }, [saving]);
+    setPaidById(currentUserId);
+  }, [currentUserId]);
 
-  // Reset paidById and categoryId when group changes (but only for user-initiated changes)
+  // Reset goalId when group changes
   useEffect(() => {
-    // Only reset if the groupId is different from the original saving's groupId
-    if (groupId !== (saving.groupId || "")) {
-      setPaidById(currentUserId);
-      setCategoryId(""); // Reset category when type changes
-    }
-  }, [groupId, currentUserId, saving.groupId]);
+    setGoalId(saving.goalId);
+  }, [groupId, saving.goalId]);
 
   // Get the selected group's members
   const selectedGroup = groupsWithMembers.find(g => g.id === groupId);
@@ -126,7 +117,7 @@ export function EditSavingDialog({
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    formData.append("categoryId", categoryId);
+    formData.append("goalId", goalId);
     if (groupId) {
       formData.append("groupId", groupId);
       formData.append("paidById", paidById);
@@ -144,6 +135,9 @@ export function EditSavingDialog({
     }
   }
 
+  // Format date for input
+  const formattedDate = new Date(saving.date).toISOString().split('T')[0];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -151,7 +145,7 @@ export function EditSavingDialog({
           <DialogHeader>
             <DialogTitle>Edit Saving</DialogTitle>
             <DialogDescription>
-              Update the saving transaction details
+              Update this savings transaction
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -176,25 +170,25 @@ export function EditSavingDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId} disabled={isLoading} required>
+              <Label htmlFor="goal">Goal</Label>
+              <Select value={goalId} onValueChange={setGoalId} disabled={isLoading} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder="Select a goal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {savingCategories.length === 0 ? (
+                  {availableGoals.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
-                      No categories available for this type. Create one first.
+                      No goals available for this type. Create one first.
                     </div>
                   ) : (
-                    savingCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                    availableGoals.map((goal) => (
+                      <SelectItem key={goal.id} value={goal.id}>
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
+                            style={{ backgroundColor: goal.color }}
                           />
-                          {category.name}
+                          {goal.name}
                         </div>
                       </SelectItem>
                     ))
@@ -243,7 +237,7 @@ export function EditSavingDialog({
                 id="date"
                 name="date"
                 type="date"
-                defaultValue={new Date(saving.date).toISOString().split('T')[0]}
+                defaultValue={formattedDate}
                 required
                 disabled={isLoading}
               />
@@ -269,8 +263,8 @@ export function EditSavingDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !categoryId}>
-              {isLoading ? "Updating..." : "Update Saving"}
+            <Button type="submit" disabled={isLoading || !goalId}>
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

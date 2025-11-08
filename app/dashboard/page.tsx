@@ -180,15 +180,15 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Getting Started</CardTitle>
-              <CardDescription>Set up your Couplefy account</CardDescription>
+              <CardDescription>Here's some first steps to set up your Couplefy account</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="rounded-full bg-primary/10 p-2 text-primary">1</div>
                 <div>
-                  <h3 className="font-semibold">Create or join a couple</h3>
+                  <h3 className="font-semibold">Create or Join a group</h3>
                   <p className="text-sm text-muted-foreground">
-                    Create a new couple or accept an invitation from your partner
+                    Create a new group or accept an invitation from a partner
                   </p>
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
                 <div>
                   <h3 className="font-semibold">Set up categories</h3>
                   <p className="text-sm text-muted-foreground">
-                    Create custom categories for your expenses and savings
+                    Create custom categories for your expenses or goals for your savings
                   </p>
                 </div>
               </div>

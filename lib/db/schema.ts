@@ -3,7 +3,6 @@ import { relations } from "drizzle-orm";
 
 // Enums
 export const inviteStatusEnum = pgEnum("invite_status", ["pending", "accepted", "rejected", "expired"]);
-export const categoryTypeEnum = pgEnum("category_type", ["expense", "saving", "both"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -44,16 +43,28 @@ export const invites = pgTable("invites", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Categories table
+// Categories table (for expenses only)
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }), // null = shared category
   groupId: uuid("group_id").references(() => groups.id, { onDelete: "cascade" }), // null = personal category
   name: varchar("name", { length: 100 }).notNull(),
-  type: categoryTypeEnum("type").notNull(), // expense, saving, or both
   color: varchar("color", { length: 7 }).default("#6366f1"), // hex color for UI
   icon: varchar("icon", { length: 50 }), // icon identifier for UI
-  isDefault: boolean("is_default").default(false), // system default categories
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Goals table (for savings)
+export const goals = pgTable("goals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }), // null = shared goal
+  groupId: uuid("group_id").references(() => groups.id, { onDelete: "cascade" }), // null = personal goal
+  name: varchar("name", { length: 100 }).notNull(),
+  targetAmount: decimal("target_amount", { precision: 10, scale: 2 }), // null = no target amount
+  color: varchar("color", { length: 7 }).default("#10b981"), // hex color for UI (default green)
+  icon: varchar("icon", { length: 50 }), // icon identifier for UI
+  description: text("description"), // optional description of the goal
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -76,7 +87,7 @@ export const savings = pgTable("savings", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   groupId: uuid("group_id").references(() => groups.id, { onDelete: "cascade" }), // null = personal savings
-  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "restrict" }),
+  goalId: uuid("goal_id").notNull().references(() => goals.id, { onDelete: "restrict" }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: text("description"),
   date: timestamp("date").notNull(),
@@ -90,6 +101,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   groupMemberships: many(groupMembers),
   sentInvites: many(invites),
   categories: many(categories),
+  goals: many(goals),
   expenses: many(expenses),
   savings: many(savings),
 }));
@@ -102,6 +114,7 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
   members: many(groupMembers),
   invites: many(invites),
   categories: many(categories),
+  goals: many(goals),
   expenses: many(expenses),
   savings: many(savings),
 }));
@@ -138,6 +151,17 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     references: [groups.id],
   }),
   expenses: many(expenses),
+}));
+
+export const goalsRelations = relations(goals, ({ one, many }) => ({
+  user: one(users, {
+    fields: [goals.userId],
+    references: [users.id],
+  }),
+  group: one(groups, {
+    fields: [goals.groupId],
+    references: [groups.id],
+  }),
   savings: many(savings),
 }));
 
@@ -165,8 +189,8 @@ export const savingsRelations = relations(savings, ({ one }) => ({
     fields: [savings.groupId],
     references: [groups.id],
   }),
-  category: one(categories, {
-    fields: [savings.categoryId],
-    references: [categories.id],
+  goal: one(goals, {
+    fields: [savings.goalId],
+    references: [goals.id],
   }),
 }));

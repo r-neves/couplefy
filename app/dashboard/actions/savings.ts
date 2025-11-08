@@ -15,14 +15,14 @@ export async function createSaving(formData: FormData) {
   }
 
   const amount = formData.get("amount") as string;
-  const categoryId = formData.get("categoryId") as string;
+  const goalId = formData.get("goalId") as string;
   const description = formData.get("description") as string || null;
   const date = formData.get("date") as string;
   const groupId = formData.get("groupId") as string || null;
   const paidById = formData.get("paidById") as string || null;
 
-  if (!amount || !categoryId || !date) {
-    return { error: "Amount, category, and date are required" };
+  if (!amount || !goalId || !date) {
+    return { error: "Amount, goal, and date are required" };
   }
 
   try {
@@ -41,7 +41,7 @@ export async function createSaving(formData: FormData) {
     const [saving] = await db.insert(savings).values({
       userId: savingUserId,
       groupId: groupId || null,
-      categoryId,
+      goalId,
       amount,
       description,
       date: new Date(date),
@@ -64,12 +64,12 @@ export async function updateSaving(savingId: string, formData: FormData) {
   }
 
   const amount = formData.get("amount") as string;
-  const categoryId = formData.get("categoryId") as string;
+  const goalId = formData.get("goalId") as string;
   const description = formData.get("description") as string || null;
   const date = formData.get("date") as string;
 
-  if (!amount || !categoryId || !date) {
-    return { error: "Amount, category, and date are required" };
+  if (!amount || !goalId || !date) {
+    return { error: "Amount, goal, and date are required" };
   }
 
   try {
@@ -93,7 +93,7 @@ export async function updateSaving(savingId: string, formData: FormData) {
     await db.update(savings)
       .set({
         amount,
-        categoryId,
+        goalId,
         description,
         date: new Date(date),
         updatedAt: new Date(),
@@ -214,7 +214,7 @@ export async function getSavings(params?: {
     const userSavings = await db.query.savings.findMany({
       where: finalCondition,
       with: {
-        category: true,
+        goal: true,
         group: true,
         user: true,
       },
