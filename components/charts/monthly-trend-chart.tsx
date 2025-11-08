@@ -12,6 +12,7 @@ import {
   Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
   CategoryScale,
@@ -21,7 +22,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartDataLabels
 );
 
 interface MonthlyData {
@@ -87,6 +89,23 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
             label += "$" + context.parsed.y.toFixed(2);
             return label;
           },
+        },
+      },
+      datalabels: {
+        display: function(context: any) {
+          // Only show labels for the last point of each dataset
+          return context.dataIndex === context.dataset.data.length - 1;
+        },
+        align: 'top' as const,
+        color: function(context: any) {
+          return context.dataset.borderColor;
+        },
+        font: {
+          weight: 'bold' as const,
+          size: 12,
+        },
+        formatter: (value: number) => {
+          return '$' + value.toFixed(0);
         },
       },
     },

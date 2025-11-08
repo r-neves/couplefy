@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +29,7 @@ interface Category {
   name: string;
   color: string;
   type: string;
+  groupId: string | null;
 }
 
 interface Group {
@@ -36,22 +37,65 @@ interface Group {
   name: string;
 }
 
+interface GroupWithMembers {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  members: Array<{
+    user: {
+      id: string;
+      name: string;
+    };
+  }>;
+}
+
 interface CreateExpenseDialogProps {
   categories: Category[];
   groups: Group[];
+  groupsWithMembers: GroupWithMembers[];
+  currentUserId: string;
   trigger?: React.ReactNode;
 }
 
-export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpenseDialogProps) {
+export function CreateExpenseDialog({ categories, groups, groupsWithMembers, currentUserId, trigger }: CreateExpenseDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [groupId, setGroupId] = useState("");
+  const [paidById, setPaidById] = useState(currentUserId);
   const router = useRouter();
 
-  // Filter categories for expenses
-  const expenseCategories = categories.filter(c => c.type === "expense" || c.type === "both");
+  // Filter categories based on type (expense/both) and selected group
+  const expenseCategories = categories.filter(c => {
+    const isExpenseType = c.type === "expense" || c.type === "both";
+    if (!isExpenseType) return false;
+
+    // If personal is selected, show only personal categories (no groupId)
+    if (!groupId) {
+      return c.groupId === null;
+    }
+
+    // If a group is selected, show only categories for that group
+    return c.groupId === groupId;
+  });
+
+  // Reset paidById when currentUserId changes
+  useEffect(() => {
+    setPaidById(currentUserId);
+  }, [currentUserId]);
+
+  // Reset paidById and categoryId when group changes
+  useEffect(() => {
+    setPaidById(currentUserId);
+    setCategoryId(""); // Reset category when type changes
+  }, [groupId, currentUserId]);
+
+  // Get the selected group's members
+  const selectedGroup = groupsWithMembers.find(g => g.id === groupId);
+  const groupMembers = selectedGroup?.members || [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,6 +106,7 @@ export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpen
     formData.append("categoryId", categoryId);
     if (groupId) {
       formData.append("groupId", groupId);
+      formData.append("paidById", paidById);
     }
 
     const result = await createExpense(formData);
@@ -74,6 +119,7 @@ export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpen
       setIsLoading(false);
       setCategoryId("");
       setGroupId("");
+      setPaidById(currentUserId);
       (e.target as HTMLFormElement).reset();
       router.refresh();
     }
@@ -97,17 +143,23 @@ export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpen
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                name="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                required
-                disabled={isLoading}
-              />
+              <Label htmlFor="type">Type</Label>
+              <Select value={groupId || "personal"} onValueChange={(value) => setGroupId(value === "personal" ? "" : value)} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="personal">Personal</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {groupId ? "Shared with your couple" : "Personal expense"}
+              </p>
             </div>
 
             <div className="grid gap-2">
@@ -119,7 +171,7 @@ export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpen
                 <SelectContent>
                   {expenseCategories.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
-                      No categories available. Create one first.
+                      No categories available for this type. Create one first.
                     </div>
                   ) : (
                     expenseCategories.map((category) => (
@@ -139,24 +191,37 @@ export function CreateExpenseDialog({ categories, groups, trigger }: CreateExpen
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="type">Type</Label>
-              <Select value={groupId || "personal"} onValueChange={(value) => setGroupId(value === "personal" ? "" : value)} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal">Personal</SelectItem>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {groupId ? "Shared with your couple" : "Personal expense"}
-              </p>
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                name="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                required
+                disabled={isLoading}
+              />
             </div>
+
+            {groupId && groupMembers.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="paidBy">Paid by</Label>
+                <Select value={paidById} onValueChange={setPaidById} disabled={isLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select who paid" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groupMembers.map((member) => (
+                      <SelectItem key={member.user.id} value={member.user.id}>
+                        {member.user.name}
+                        {member.user.id === currentUserId && " (You)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>

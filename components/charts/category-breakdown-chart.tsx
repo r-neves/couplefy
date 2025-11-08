@@ -2,8 +2,9 @@
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 interface CategoryData {
   name: string;
@@ -38,6 +39,8 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
 
   const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+  const total = data.reduce((sum, item) => sum + item.total, 0);
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -61,6 +64,18 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
             const percentage = ((value / total) * 100).toFixed(1);
             return `${label}: $${value.toFixed(2)} (${percentage}%)`;
           },
+        },
+      },
+      datalabels: {
+        color: '#fff',
+        font: {
+          weight: 'bold' as const,
+          size: 13,
+        },
+        formatter: (value: number, context: any) => {
+          const percentage = ((value / total) * 100);
+          // Only show label if slice is larger than 5% to avoid clutter
+          return percentage > 5 ? `$${value.toFixed(0)}` : '';
         },
       },
     },

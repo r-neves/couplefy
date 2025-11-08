@@ -19,6 +19,7 @@ export async function createExpense(formData: FormData) {
   const description = formData.get("description") as string || null;
   const date = formData.get("date") as string;
   const groupId = formData.get("groupId") as string || null;
+  const paidById = formData.get("paidById") as string || null;
 
   if (!amount || !categoryId || !date) {
     return { error: "Amount, category, and date are required" };
@@ -33,8 +34,12 @@ export async function createExpense(formData: FormData) {
       return { error: "User not found" };
     }
 
+    // For group expenses, use paidById if provided, otherwise use current user
+    // For personal expenses, always use current user
+    const expenseUserId = groupId && paidById ? paidById : dbUser.id;
+
     const [expense] = await db.insert(expenses).values({
-      userId: dbUser.id,
+      userId: expenseUserId,
       groupId: groupId || null,
       categoryId,
       amount,
@@ -211,6 +216,7 @@ export async function getExpenses(params?: {
       with: {
         category: true,
         group: true,
+        user: true,
       },
       orderBy: [desc(expenses.date)],
     });

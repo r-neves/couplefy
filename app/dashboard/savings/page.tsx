@@ -8,6 +8,7 @@ import { getUserGroups } from "../actions/groups";
 import Link from "next/link";
 import { CreateSavingDialog } from "@/components/savings/create-saving-dialog";
 import { CreateCategoryDialog } from "@/components/categories/create-category-dialog";
+import { SavingsList } from "@/components/savings/savings-list";
 import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { ExpenseComparisonChart } from "@/components/charts/expense-comparison-chart";
 import { MonthSelector } from "@/components/filters/month-selector";
@@ -47,13 +48,21 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
         name: c.name,
         color: c.color || "#6366f1",
         type: c.type,
+        groupId: c.groupId,
       }))
     : [];
 
   const groupsResult = await getUserGroups();
-  const groups = groupsResult.success
-    ? groupsResult.groups.map(g => ({ id: g.id, name: g.name }))
-    : [];
+  const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
+  const groups = groupsWithMembers.map(g => ({ id: g.id, name: g.name }));
+
+  // Get current user's DB ID
+  const { db } = await import("@/lib/db");
+  const { users: usersSchema } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+  const currentUser = await db.query.users.findFirst({
+    where: eq(usersSchema.supabaseId, user.id),
+  });
 
   // Calculate totals
   const personalSavings = savings.filter(s => !s.groupId);
@@ -179,50 +188,19 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <CreateSavingDialog
                 categories={categories}
                 groups={groups}
+                groupsWithMembers={groupsWithMembers}
+                currentUserId={currentUser?.id || ""}
               />
             </div>
           </CardHeader>
           <CardContent>
-            {savings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No savings recorded this month</p>
-                <p className="text-sm mt-2">Click "Add Saving" to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {savings.map((saving) => (
-                  <div
-                    key={saving.id}
-                    className="flex items-center justify-between p-4 rounded-lg border"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                        style={{ backgroundColor: saving.category.color || "#6366f1" }}
-                      >
-                        {saving.category.icon || saving.category.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium">{saving.category.name}</p>
-                        {saving.description && (
-                          <p className="text-sm text-muted-foreground">{saving.description}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(saving.date).toLocaleDateString()}
-                          {saving.group && ` • ${saving.group.name}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-green-600">${parseFloat(saving.amount).toFixed(2)}</p>
-                      {saving.groupId && (
-                        <p className="text-xs text-muted-foreground">Shared</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <SavingsList
+              savings={savings}
+              categories={categories}
+              groups={groups}
+              groupsWithMembers={groupsWithMembers}
+              currentUserId={currentUser?.id || ""}
+            />
           </CardContent>
         </Card>
 

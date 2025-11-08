@@ -19,6 +19,7 @@ export async function createSaving(formData: FormData) {
   const description = formData.get("description") as string || null;
   const date = formData.get("date") as string;
   const groupId = formData.get("groupId") as string || null;
+  const paidById = formData.get("paidById") as string || null;
 
   if (!amount || !categoryId || !date) {
     return { error: "Amount, category, and date are required" };
@@ -33,8 +34,12 @@ export async function createSaving(formData: FormData) {
       return { error: "User not found" };
     }
 
+    // For group savings, use paidById if provided, otherwise use current user
+    // For personal savings, always use current user
+    const savingUserId = groupId && paidById ? paidById : dbUser.id;
+
     const [saving] = await db.insert(savings).values({
-      userId: dbUser.id,
+      userId: savingUserId,
       groupId: groupId || null,
       categoryId,
       amount,
@@ -211,6 +216,7 @@ export async function getSavings(params?: {
       with: {
         category: true,
         group: true,
+        user: true,
       },
       orderBy: [desc(savings.date)],
     });

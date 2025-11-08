@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createSaving } from "@/app/dashboard/actions/savings";
+import { updateSaving } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 
 interface Category {
@@ -51,21 +50,40 @@ interface GroupWithMembers {
   }>;
 }
 
-interface CreateSavingDialogProps {
+interface Saving {
+  id: string;
+  amount: string;
+  categoryId: string;
+  description: string | null;
+  date: Date;
+  groupId: string | null;
+  userId: string;
+}
+
+interface EditSavingDialogProps {
+  saving: Saving;
   categories: Category[];
   groups: Group[];
   groupsWithMembers: GroupWithMembers[];
   currentUserId: string;
-  trigger?: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function CreateSavingDialog({ categories, groups, groupsWithMembers, currentUserId, trigger }: CreateSavingDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditSavingDialog({
+  saving,
+  categories,
+  groups,
+  groupsWithMembers,
+  currentUserId,
+  open,
+  onOpenChange
+}: EditSavingDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [groupId, setGroupId] = useState("");
-  const [paidById, setPaidById] = useState(currentUserId);
+  const [categoryId, setCategoryId] = useState(saving.categoryId);
+  const [groupId, setGroupId] = useState(saving.groupId || "");
+  const [paidById, setPaidById] = useState(saving.userId);
   const router = useRouter();
 
   // Filter categories based on type (saving/both) and selected group
@@ -82,16 +100,21 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
     return c.groupId === groupId;
   });
 
-  // Reset paidById when currentUserId changes
+  // Reset form when saving changes
   useEffect(() => {
-    setPaidById(currentUserId);
-  }, [currentUserId]);
+    setCategoryId(saving.categoryId);
+    setGroupId(saving.groupId || "");
+    setPaidById(saving.userId);
+  }, [saving]);
 
-  // Reset paidById and categoryId when group changes
+  // Reset paidById and categoryId when group changes (but only for user-initiated changes)
   useEffect(() => {
-    setPaidById(currentUserId);
-    setCategoryId(""); // Reset category when type changes
-  }, [groupId, currentUserId]);
+    // Only reset if the groupId is different from the original saving's groupId
+    if (groupId !== (saving.groupId || "")) {
+      setPaidById(currentUserId);
+      setCategoryId(""); // Reset category when type changes
+    }
+  }, [groupId, currentUserId, saving.groupId]);
 
   // Get the selected group's members
   const selectedGroup = groupsWithMembers.find(g => g.id === groupId);
@@ -109,36 +132,26 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
       formData.append("paidById", paidById);
     }
 
-    const result = await createSaving(formData);
+    const result = await updateSaving(saving.id, formData);
 
     if (result.error) {
       setError(result.error);
       setIsLoading(false);
     } else {
-      setOpen(false);
+      onOpenChange(false);
       setIsLoading(false);
-      setCategoryId("");
-      setGroupId("");
-      setPaidById(currentUserId);
-      (e.target as HTMLFormElement).reset();
       router.refresh();
     }
   }
 
-  // Default date to today
-  const today = new Date().toISOString().split('T')[0];
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || <Button>Add Saving</Button>}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Saving</DialogTitle>
+            <DialogTitle>Edit Saving</DialogTitle>
             <DialogDescription>
-              Record a new savings transaction
+              Update the saving transaction details
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -198,6 +211,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
                 type="number"
                 step="0.01"
                 min="0"
+                defaultValue={saving.amount}
                 placeholder="0.00"
                 required
                 disabled={isLoading}
@@ -229,7 +243,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
                 id="date"
                 name="date"
                 type="date"
-                defaultValue={today}
+                defaultValue={new Date(saving.date).toISOString().split('T')[0]}
                 required
                 disabled={isLoading}
               />
@@ -241,6 +255,7 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
                 id="description"
                 name="description"
                 placeholder="Add a note about this saving"
+                defaultValue={saving.description || ""}
                 disabled={isLoading}
                 rows={3}
               />
@@ -251,8 +266,11 @@ export function CreateSavingDialog({ categories, groups, groupsWithMembers, curr
             )}
           </div>
           <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading || !categoryId}>
-              {isLoading ? "Adding..." : "Add Saving"}
+              {isLoading ? "Updating..." : "Update Saving"}
             </Button>
           </DialogFooter>
         </form>

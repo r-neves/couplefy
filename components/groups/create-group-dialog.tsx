@@ -43,19 +43,19 @@ export function CreateGroupDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Couple</Button>
+        <Button>Create Group</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create a Couple</DialogTitle>
+            <DialogTitle>Create a Group</DialogTitle>
             <DialogDescription>
-              Create a new couple to share expenses and savings with your partner.
+              Create a new group to share expenses and savings with.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Couple Name</Label>
+              <Label htmlFor="name">Group Name</Label>
               <Input
                 id="name"
                 name="name"

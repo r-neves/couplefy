@@ -8,8 +8,10 @@ import { getUserGroups } from "../actions/groups";
 import Link from "next/link";
 import { CreateExpenseDialog } from "@/components/expenses/create-expense-dialog";
 import { CreateCategoryDialog } from "@/components/categories/create-category-dialog";
+import { ExpensesList } from "@/components/expenses/expenses-list";
 import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { ExpenseComparisonChart } from "@/components/charts/expense-comparison-chart";
+import { PersonBreakdownChart } from "@/components/charts/person-breakdown-chart";
 import { MonthSelector } from "@/components/filters/month-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -47,13 +49,21 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
         name: c.name,
         color: c.color || "#6366f1",
         type: c.type,
+        groupId: c.groupId,
       }))
     : [];
 
   const groupsResult = await getUserGroups();
-  const groups = groupsResult.success
-    ? groupsResult.groups.map(g => ({ id: g.id, name: g.name }))
-    : [];
+  const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
+  const groups = groupsWithMembers.map(g => ({ id: g.id, name: g.name }));
+
+  // Get current user's DB ID
+  const { db } = await import("@/lib/db");
+  const { users: usersSchema } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+  const currentUser = await db.query.users.findFirst({
+    where: eq(usersSchema.supabaseId, user.id),
+  });
 
   // Calculate totals
   const personalExpenses = expenses.filter(e => !e.groupId);
@@ -81,6 +91,53 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   }, {} as Record<string, { name: string; total: number; color: string }>);
 
   const categoryData = Object.values(categoryBreakdown);
+
+  // Calculate group-specific analytics
+  const groupAnalytics = groupsWithMembers.map(group => {
+    const groupExpenses = expenses.filter(e => e.groupId === group.id);
+
+    // Category breakdown for this group
+    const groupCategoryBreakdown = groupExpenses.reduce((acc, expense) => {
+      const categoryId = expense.category.id;
+      const categoryName = expense.category.name;
+      const categoryColor = expense.category.color || "#6366f1";
+      const amount = parseFloat(expense.amount);
+
+      if (!acc[categoryId]) {
+        acc[categoryId] = {
+          name: categoryName,
+          total: 0,
+          color: categoryColor,
+        };
+      }
+      acc[categoryId].total += amount;
+      return acc;
+    }, {} as Record<string, { name: string; total: number; color: string }>);
+
+    // Per-person spending for this group
+    const personSpending = groupExpenses.reduce((acc, expense) => {
+      const userId = expense.user.id;
+      const userName = expense.user.name;
+      const amount = parseFloat(expense.amount);
+
+      if (!acc[userId]) {
+        acc[userId] = {
+          name: userName,
+          total: 0,
+        };
+      }
+      acc[userId].total += amount;
+      return acc;
+    }, {} as Record<string, { name: string; total: number }>);
+
+    return {
+      group,
+      categoryData: Object.values(groupCategoryBreakdown),
+      personData: Object.values(personSpending),
+      totalExpenses: groupExpenses.length,
+      totalAmount: groupExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0),
+    };
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-950 dark:via-slate-900 dark:to-gray-900">
@@ -167,11 +224,45 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
           </div>
         )}
 
+        {/* Group-specific Analytics */}
+        {groupAnalytics.map(analytics => (
+          analytics.totalExpenses > 0 && (
+            <div key={analytics.group.id} className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">{analytics.group.name} - Group Expenses</h2>
+              <div className="grid gap-6 md:grid-cols-2 mb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Category Breakdown</CardTitle>
+                    <CardDescription>
+                      Spending by category for {analytics.group.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CategoryBreakdownChart data={analytics.categoryData} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Spending by Person</CardTitle>
+                    <CardDescription>
+                      How much each person spent in {analytics.group.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <PersonBreakdownChart data={analytics.personData} />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )
+        ))}
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Expenses</CardTitle>
+                <CardTitle>Expenses List</CardTitle>
                 <CardDescription>
                   All transactions for this month
                 </CardDescription>
@@ -179,50 +270,19 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <CreateExpenseDialog
                 categories={categories}
                 groups={groups}
+                groupsWithMembers={groupsWithMembers}
+                currentUserId={currentUser?.id || ""}
               />
             </div>
           </CardHeader>
           <CardContent>
-            {expenses.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No expenses recorded this month</p>
-                <p className="text-sm mt-2">Click "Add Expense" to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {expenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-4 rounded-lg border"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                        style={{ backgroundColor: expense.category.color || "#6366f1" }}
-                      >
-                        {expense.category.icon || expense.category.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium">{expense.category.name}</p>
-                        {expense.description && (
-                          <p className="text-sm text-muted-foreground">{expense.description}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(expense.date).toLocaleDateString()}
-                          {expense.group && ` • ${expense.group.name}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">${parseFloat(expense.amount).toFixed(2)}</p>
-                      {expense.groupId && (
-                        <p className="text-xs text-muted-foreground">Shared</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ExpensesList
+              expenses={expenses}
+              categories={categories}
+              groups={groups}
+              groupsWithMembers={groupsWithMembers}
+              currentUserId={currentUser?.id || ""}
+            />
           </CardContent>
         </Card>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,7 +10,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
@@ -22,32 +22,41 @@ ChartJS.register(
   ChartDataLabels
 );
 
-interface ExpenseComparisonChartProps {
-  personalTotal: number;
-  sharedTotal: number;
+interface PersonSpending {
+  name: string;
+  total: number;
+  color?: string;
 }
 
-export function ExpenseComparisonChart({
-  personalTotal,
-  sharedTotal,
-}: ExpenseComparisonChartProps) {
+interface PersonBreakdownChartProps {
+  data: PersonSpending[];
+}
+
+export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        No data available
+      </div>
+    );
+  }
+
   const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   const chartData = {
-    labels: ["This Month"],
+    labels: data.map((item) => item.name),
     datasets: [
       {
-        label: "Personal",
-        data: [personalTotal],
-        backgroundColor: "rgba(99, 102, 241, 0.8)",
-        borderColor: "rgb(99, 102, 241)",
-        borderWidth: 1,
-      },
-      {
-        label: "Shared",
-        data: [sharedTotal],
-        backgroundColor: "rgba(236, 72, 153, 0.8)",
-        borderColor: "rgb(236, 72, 153)",
+        label: "Amount Spent",
+        data: data.map((item) => item.total),
+        backgroundColor: data.map((item, index) => {
+          const colors = ['rgba(99, 102, 241, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(139, 92, 246, 0.8)'];
+          return item.color || colors[index % colors.length];
+        }),
+        borderColor: data.map((item, index) => {
+          const colors = ['rgb(99, 102, 241)', 'rgb(236, 72, 153)', 'rgb(139, 92, 246)'];
+          return item.color || colors[index % colors.length];
+        }),
         borderWidth: 1,
       },
     ],
@@ -58,20 +67,12 @@ export function ExpenseComparisonChart({
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top" as const,
-        labels: {
-          color: isDark ? '#e5e7eb' : '#374151',
-        },
+        display: false,
       },
       tooltip: {
         callbacks: {
           label: function (context: any) {
-            let label = context.dataset.label || "";
-            if (label) {
-              label += ": ";
-            }
-            label += "$" + context.parsed.y.toFixed(2);
-            return label;
+            return `$${context.parsed.y.toFixed(2)}`;
           },
         },
       },
@@ -92,10 +93,10 @@ export function ExpenseComparisonChart({
       y: {
         beginAtZero: true,
         ticks: {
-          color: isDark ? '#9ca3af' : '#6b7280',
           callback: function (value: any) {
             return "$" + value;
           },
+          color: isDark ? '#9ca3af' : '#6b7280',
         },
         grid: {
           color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
@@ -113,7 +114,7 @@ export function ExpenseComparisonChart({
   };
 
   return (
-    <div className="h-[300px]">
+    <div className="h-64">
       <Bar data={chartData} options={options} />
     </div>
   );

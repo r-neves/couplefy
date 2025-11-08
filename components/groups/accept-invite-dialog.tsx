@@ -44,14 +44,14 @@ export function AcceptInviteDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Join Couple</Button>
+        <Button variant="outline">Join Group</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Join a Couple</DialogTitle>
+            <DialogTitle>Join a Group</DialogTitle>
             <DialogDescription>
-              Enter the invite code shared by your partner to join their couple.
+              Enter the invite code shared by your partner to join their group.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
