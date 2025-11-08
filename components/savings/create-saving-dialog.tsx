@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createSaving } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
+import { PiggyBank } from "lucide-react";
 
 interface Goal {
   id: string;
@@ -128,7 +129,15 @@ export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUs
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || <Button>Add Saving</Button>}
+        {trigger || (
+          <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
+            <PiggyBank className="h-5 w-5 flex-shrink-0" />
+            <div className="text-left">
+              <div className="font-semibold text-sm">Add Saving</div>
+              <div className="text-xs text-muted-foreground">Record a saving</div>
+            </div>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

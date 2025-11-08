@@ -13,9 +13,11 @@ import { getUserGoals } from "./actions/goals";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Check } from "lucide-react";
+import { Check, Zap, Receipt, PiggyBank } from "lucide-react";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { CurrencyDisplay } from "@/components/ui/currency-display";
+import { CreateExpenseDialog } from "@/components/expenses/create-expense-dialog";
+import { CreateSavingDialog } from "@/components/savings/create-saving-dialog";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -101,6 +103,41 @@ export default async function DashboardPage() {
             Manage your personal and shared life in one place.
           </p>
         </div>
+
+        {/* Quick Actions */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Quick Actions
+            </CardTitle>
+            <CardDescription>Common tasks you can do right now</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <CreateExpenseDialog 
+              categories={categories as any} 
+              groups={userGroups}
+              groupsWithMembers={userGroups}
+              currentUserId={user.id}
+              trigger={
+                <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
+                  <Receipt className="h-5 w-5 flex-shrink-0" />
+                  <div className="text-left">
+                    <div className="font-semibold text-sm">Add Expense</div>
+                    <div className="text-xs text-muted-foreground">Record a spending</div>
+                  </div>
+                </Button>
+              }
+            />
+
+            <CreateSavingDialog 
+              goals={goals as any} 
+              groups={userGroups}
+              groupsWithMembers={userGroups}
+              currentUserId={user.id}
+            />
+          </CardContent>
+        </Card>
 
         {!allStepsCompleted && (
           <div className="mt-8">
