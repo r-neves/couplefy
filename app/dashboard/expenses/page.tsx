@@ -144,16 +144,17 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
       {/* Header */}
       <header className="border-b bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">← Back</Button>
               </Link>
-              <h1 className="text-2xl font-bold">Expenses</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Expenses</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
-              <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm">+ Category</Button>} />
+              <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Category</Button>} />
+              <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
             </div>
           </div>
           <div className="flex justify-center">

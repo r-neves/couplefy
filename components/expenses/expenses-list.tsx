@@ -90,49 +90,53 @@ export function ExpensesList({
           {expenses.map((expense) => (
             <div
               key={expense.id}
-              className="flex items-center justify-between p-4 rounded-lg border"
+              className="flex items-start gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg border"
             >
-              <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
                   style={{ backgroundColor: expense.category.color || "#6366f1" }}
                 >
                   {expense.category.icon || expense.category.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">{expense.category.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">{expense.category.name}</p>
                   {expense.description && (
-                    <p className="text-sm text-muted-foreground">{expense.description}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{expense.description}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
                     {new Date(expense.date).toLocaleDateString()}
                     {expense.group && ` • ${expense.group.name}`}
                     {!expense.group && ` • Personal`}
-                    {expense.group && expense.user && ` • Paid by ${expense.user.name}`}
+                    {expense.group && expense.user && ` • ${expense.user.name}`}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right mr-2">
-                  <p className="text-lg font-semibold">${parseFloat(expense.amount).toFixed(2)}</p>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="text-right">
+                  <p className="text-base sm:text-lg font-semibold whitespace-nowrap">${parseFloat(expense.amount).toFixed(2)}</p>
                   {expense.groupId && (
                     <p className="text-xs text-muted-foreground">Shared</p>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditingExpense(expense)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setDeletingExpense(expense)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setEditingExpense(expense)}
+                  >
+                    <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setDeletingExpense(expense)}
+                  >
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

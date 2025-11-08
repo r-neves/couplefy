@@ -48,16 +48,18 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-950 dark:via-slate-900 dark:to-gray-900">
       {/* Header */}
       <header className="border-b bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-            Couplefy
-          </h1>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              {user.email}
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+              Couplefy
+            </h1>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="text-sm text-muted-foreground hidden sm:block truncate max-w-[150px] md:max-w-none">
+                {user.email}
+              </div>
+              <ThemeToggle />
+              <SignOutButton />
             </div>
-            <ThemeToggle />
-            <SignOutButton />
           </div>
         </div>
       </header>
