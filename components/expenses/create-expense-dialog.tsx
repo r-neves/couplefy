@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createExpense } from "@/app/dashboard/actions/expenses";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 interface Category {
   id: string;
@@ -127,7 +128,7 @@ export function CreateExpenseDialog({ categories, groups, groupsWithMembers, cur
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || <Button>Add Expense</Button>}
+        {trigger || <Button><Plus className="mr-2 h-4 w-4" />Add Expense</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

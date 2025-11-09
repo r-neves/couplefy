@@ -186,6 +186,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
                 groups={groups}
                 groupsWithMembers={groupsWithMembers}
                 currentUserId={currentUser?.id || ""}
+                simple
               />
             </div>
           </CardHeader>

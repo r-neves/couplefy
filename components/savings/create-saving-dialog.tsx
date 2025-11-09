@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createSaving } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
-import { PiggyBank } from "lucide-react";
+import { PiggyBank, Plus } from "lucide-react";
 
 interface Goal {
   id: string;
@@ -58,9 +58,10 @@ interface CreateSavingDialogProps {
   groupsWithMembers: GroupWithMembers[];
   currentUserId: string;
   trigger?: React.ReactNode;
+  simple?: boolean;
 }
 
-export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUserId, trigger }: CreateSavingDialogProps) {
+export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUserId, trigger, simple = false }: CreateSavingDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -130,13 +131,20 @@ export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUs
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
-            <PiggyBank className="h-5 w-5 flex-shrink-0" />
-            <div className="text-left">
-              <div className="font-semibold text-sm">Add Saving</div>
-              <div className="text-xs text-muted-foreground">Record a saving</div>
-            </div>
-          </Button>
+          simple ? (
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Saving
+            </Button>
+          ) : (
+            <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
+              <PiggyBank className="h-5 w-5 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold text-sm">Add Saving</div>
+                <div className="text-xs text-muted-foreground">Record a saving</div>
+              </div>
+            </Button>
+          )
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
