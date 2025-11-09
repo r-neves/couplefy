@@ -85,8 +85,8 @@ export default async function DashboardPage() {
               <div className="text-sm text-muted-foreground hidden sm:block truncate max-w-[150px] md:max-w-none">
                 {user.email}
               </div>
-              <SettingsDialog />
               <ThemeToggle />
+              <SettingsDialog />
               <SignOutButton />
             </div>
           </div>

@@ -13,18 +13,24 @@ export function MonthSelector({ currentPath }: MonthSelectorProps) {
   const searchParams = useSearchParams();
 
   // Get current month from search params or default to current month
-  const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
-  const month = parseInt(searchParams.get("month") || (new Date().getMonth() + 1).toString());
+  const yearParam = searchParams.get("year");
+  const monthParam = searchParams.get("month");
+  const isAllTime = yearParam === "all";
+  
+  const year = isAllTime ? new Date().getFullYear() : parseInt(yearParam || new Date().getFullYear().toString());
+  const month = isAllTime ? new Date().getMonth() + 1 : parseInt(monthParam || (new Date().getMonth() + 1).toString());
 
   const currentDate = new Date(year, month - 1);
 
   const handlePreviousMonth = () => {
+    if (isAllTime) return;
     const prevMonth = new Date(currentDate);
     prevMonth.setMonth(prevMonth.getMonth() - 1);
     router.push(`${currentPath}?year=${prevMonth.getFullYear()}&month=${prevMonth.getMonth() + 1}`);
   };
 
   const handleNextMonth = () => {
+    if (isAllTime || isCurrentMonth()) return;
     const nextMonth = new Date(currentDate);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     router.push(`${currentPath}?year=${nextMonth.getFullYear()}&month=${nextMonth.getMonth() + 1}`);
@@ -32,6 +38,10 @@ export function MonthSelector({ currentPath }: MonthSelectorProps) {
 
   const handleCurrentMonth = () => {
     router.push(currentPath);
+  };
+
+  const handleAllTime = () => {
+    router.push(`${currentPath}?year=all`);
   };
 
   const isCurrentMonth = () => {
@@ -45,22 +55,42 @@ export function MonthSelector({ currentPath }: MonthSelectorProps) {
         variant="outline"
         size="icon"
         onClick={handlePreviousMonth}
+        disabled={isAllTime}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium min-w-[120px] text-center">
-          {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {isAllTime ? "All Time" : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </span>
-        {!isCurrentMonth() && (
+        {isAllTime ? (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCurrentMonth}
           >
-            Today
+            Monthly
           </Button>
+        ) : (
+          <>
+            {!isCurrentMonth() && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCurrentMonth}
+              >
+                Today
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAllTime}
+            >
+              All Time
+            </Button>
+          </>
         )}
       </div>
 
@@ -68,6 +98,7 @@ export function MonthSelector({ currentPath }: MonthSelectorProps) {
         variant="outline"
         size="icon"
         onClick={handleNextMonth}
+        disabled={isAllTime || isCurrentMonth()}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

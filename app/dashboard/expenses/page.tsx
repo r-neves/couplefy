@@ -33,16 +33,17 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   // Get month from search params or default to current month
   const params = await searchParams;
   const now = new Date();
-  const year = params.year ? parseInt(params.year) : now.getFullYear();
-  const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
+  const isAllTime = params.year === "all";
+  const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
+  const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  const startOfMonth = new Date(year, month - 1, 1);
-  const endOfMonth = new Date(year, month, 0);
-
-  const expensesResult = await getExpenses({
-    startDate: startOfMonth,
-    endDate: endOfMonth,
-  });
+  // For all time view, don't filter by date
+  const expensesResult = isAllTime 
+    ? await getExpenses({})
+    : await getExpenses({
+        startDate: new Date(year, month - 1, 1),
+        endDate: new Date(year, month, 0),
+      });
   const expenses = expensesResult.success ? expensesResult.expenses : [];
 
   const categoriesResult = await getUserCategories();
@@ -164,8 +165,8 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <h1 className="text-xl sm:text-2xl font-bold">Expenses</h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <SettingsDialog />
               <ThemeToggle />
+              <SettingsDialog />
               <ManageCategoriesDialog categories={categories} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Category</Button>} />
               <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
@@ -297,7 +298,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <div>
                 <CardTitle>Expenses List</CardTitle>
                 <CardDescription>
-                  All transactions for this month
+                  {isAllTime ? "All transactions" : "All transactions for this month"}
                 </CardDescription>
               </div>
               <CreateExpenseDialog

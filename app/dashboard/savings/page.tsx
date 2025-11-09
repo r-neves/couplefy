@@ -32,16 +32,17 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
   // Get month from search params or default to current month
   const params = await searchParams;
   const now = new Date();
-  const year = params.year ? parseInt(params.year) : now.getFullYear();
-  const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
+  const isAllTime = params.year === "all";
+  const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
+  const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  const startOfMonth = new Date(year, month - 1, 1);
-  const endOfMonth = new Date(year, month, 0);
-
-  const savingsResult = await getSavings({
-    startDate: startOfMonth,
-    endDate: endOfMonth,
-  });
+  // For all time view, don't filter by date
+  const savingsResult = isAllTime
+    ? await getSavings({})
+    : await getSavings({
+        startDate: new Date(year, month - 1, 1),
+        endDate: new Date(year, month, 0),
+      });
   const savings = savingsResult.success ? savingsResult.savings : [];
 
   const goalsResult = await getUserGoals();
@@ -122,8 +123,8 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <h1 className="text-xl sm:text-2xl font-bold">Savings</h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <SettingsDialog />
               <ThemeToggle />
+              <SettingsDialog />
               <ManageGoalsDialog goals={goals} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
               <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Goal</Button>} />
               <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
@@ -178,7 +179,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <div>
                 <CardTitle>Recent Savings</CardTitle>
                 <CardDescription>
-                  All transactions for this month
+                  {isAllTime ? "All transactions" : "All transactions for this month"}
                 </CardDescription>
               </div>
               <CreateSavingDialog
