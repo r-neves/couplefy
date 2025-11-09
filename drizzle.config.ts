@@ -10,6 +10,6 @@ export default defineConfig({
     user: process.env.POSTGRES_USER || "couplefy_user",
     password: process.env.POSTGRES_PASSWORD || "couplefy_password",
     database: process.env.POSTGRES_DB || "couplefy_db",
-    ssl: false,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   },
 });
