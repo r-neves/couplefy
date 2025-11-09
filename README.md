@@ -45,7 +45,11 @@ A Progressive Web App (PWA) for couples/groups to manage their finances together
 3. Set up environment variables:
    Create a `.env.local` file with:
    ```env
-   DATABASE_URL=postgresql://couplefy_user:couplefy_password@localhost:5432/couplefy_db
+   POSTGRES_HOST=localhost
+   POSTGRES_PORT=5432
+   POSTGRES_USER=couplefy_user
+   POSTGRES_PASSWORD=couplefy_password
+   POSTGRES_DB=couplefy_db
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
    SUPABASE_SECRET_KEY=your_secret_key
