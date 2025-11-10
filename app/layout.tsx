@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PWALifecycle } from "@/components/pwa/pwa-lifecycle";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: "Couplefy - Manage Your Life Together",
@@ -43,6 +44,7 @@ export default function RootLayout({
         >
           <PWALifecycle />
           {children}
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
