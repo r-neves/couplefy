@@ -37,16 +37,27 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
   const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  // For all time view, don't filter by date
-  const expensesResult = isAllTime 
-    ? await getExpenses({})
-    : await getExpenses({
-        startDate: new Date(year, month - 1, 1),
-        endDate: new Date(year, month, 0),
-      });
-  const expenses = expensesResult.success ? expensesResult.expenses : [];
+  // Get current user's DB ID first (needed for other queries)
+  const { db } = await import("@/lib/db");
+  const { users: usersSchema } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+  
+  // Run all data fetches in parallel for better performance
+  const [expensesResult, categoriesResult, groupsResult, currentUser] = await Promise.all([
+    isAllTime 
+      ? getExpenses({})
+      : getExpenses({
+          startDate: new Date(year, month - 1, 1),
+          endDate: new Date(year, month, 0),
+        }),
+    getUserCategories(),
+    getUserGroups(),
+    db.query.users.findFirst({
+      where: eq(usersSchema.supabaseId, user.id),
+    }),
+  ]);
 
-  const categoriesResult = await getUserCategories();
+  const expenses = expensesResult.success ? expensesResult.expenses : [];
   const categories = categoriesResult.success
     ? categoriesResult.categories.map(c => ({
         id: c.id,
@@ -56,17 +67,8 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
       }))
     : [];
 
-  const groupsResult = await getUserGroups();
   const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
   const groups = groupsWithMembers.map(g => ({ id: g.id, name: g.name }));
-
-  // Get current user's DB ID
-  const { db } = await import("@/lib/db");
-  const { users: usersSchema } = await import("@/lib/db/schema");
-  const { eq } = await import("drizzle-orm");
-  const currentUser = await db.query.users.findFirst({
-    where: eq(usersSchema.supabaseId, user.id),
-  });
 
   // Calculate totals
   const personalExpenses = expenses.filter(e => !e.groupId);

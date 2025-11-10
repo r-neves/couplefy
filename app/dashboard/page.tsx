@@ -32,22 +32,19 @@ export default async function DashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  // Get user's groups
-  const groupsResult = await getUserGroups();
+  // Run all data fetches in parallel for better performance
+  const [groupsResult, expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
+    getUserGroups(),
+    getExpenses({ startDate: startOfMonth, endDate: endOfMonth }),
+    getSavings({ startDate: startOfMonth, endDate: endOfMonth }),
+    getUserCategories(),
+    getUserGoals(),
+  ]);
+
   const userGroups = groupsResult.success ? groupsResult.groups : [];
-
-  // Get expenses and savings for current month
-  const expensesResult = await getExpenses({ startDate: startOfMonth, endDate: endOfMonth });
   const expenses = expensesResult.success ? expensesResult.expenses : [];
-
-  const savingsResult = await getSavings({ startDate: startOfMonth, endDate: endOfMonth });
   const savingsData = savingsResult.success ? savingsResult.savings : [];
-
-  // Get categories and goals
-  const categoriesResult = await getUserCategories();
   const categories = categoriesResult.success ? categoriesResult.categories : [];
-
-  const goalsResult = await getUserGoals();
   const goals = goalsResult.success ? goalsResult.goals : [];
 
   // Calculate totals

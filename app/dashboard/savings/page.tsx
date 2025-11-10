@@ -36,16 +36,27 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
   const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
   const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  // For all time view, don't filter by date
-  const savingsResult = isAllTime
-    ? await getSavings({})
-    : await getSavings({
-        startDate: new Date(year, month - 1, 1),
-        endDate: new Date(year, month, 0),
-      });
-  const savings = savingsResult.success ? savingsResult.savings : [];
+  // Get current user's DB ID first
+  const { db } = await import("@/lib/db");
+  const { users: usersSchema } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
 
-  const goalsResult = await getUserGoals();
+  // Run all data fetches in parallel for better performance
+  const [savingsResult, goalsResult, groupsResult, currentUser] = await Promise.all([
+    isAllTime
+      ? getSavings({})
+      : getSavings({
+          startDate: new Date(year, month - 1, 1),
+          endDate: new Date(year, month, 0),
+        }),
+    getUserGoals(),
+    getUserGroups(),
+    db.query.users.findFirst({
+      where: eq(usersSchema.supabaseId, user.id),
+    }),
+  ]);
+
+  const savings = savingsResult.success ? savingsResult.savings : [];
   const goals = goalsResult.success
     ? goalsResult.goals.map(g => ({
         id: g.id,
@@ -56,17 +67,8 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
       }))
     : [];
 
-  const groupsResult = await getUserGroups();
   const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
   const groups = groupsWithMembers.map(g => ({ id: g.id, name: g.name }));
-
-  // Get current user's DB ID
-  const { db } = await import("@/lib/db");
-  const { users: usersSchema } = await import("@/lib/db/schema");
-  const { eq } = await import("drizzle-orm");
-  const currentUser = await db.query.users.findFirst({
-    where: eq(usersSchema.supabaseId, user.id),
-  });
 
   // Calculate total savings this month
   const totalSavings = savings.reduce((sum, s) => sum + parseFloat(s.amount), 0);
