@@ -44,8 +44,8 @@ export default function RootLayout({
         >
           <PWALifecycle />
           {children}
-          <SpeedInsights />
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
