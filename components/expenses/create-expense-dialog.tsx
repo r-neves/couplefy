@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createExpense } from "@/app/dashboard/actions/expenses";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
 
 interface Category {
   id: string;
@@ -57,9 +57,10 @@ interface CreateExpenseDialogProps {
   groupsWithMembers: GroupWithMembers[];
   currentUserId: string;
   trigger?: React.ReactNode;
+  simple?: boolean;
 }
 
-export function CreateExpenseDialog({ categories, groups, groupsWithMembers, currentUserId, trigger }: CreateExpenseDialogProps) {
+export function CreateExpenseDialog({ categories, groups, groupsWithMembers, currentUserId, trigger, simple = false }: CreateExpenseDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -128,7 +129,22 @@ export function CreateExpenseDialog({ categories, groups, groupsWithMembers, cur
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || <Button><Plus className="mr-2 h-4 w-4" />Add Expense</Button>}
+        {trigger || (
+          simple ? (
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Expense
+            </Button>
+          ) : (
+            <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
+              <Receipt className="h-5 w-5 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold text-sm">Add Expense</div>
+                <div className="text-xs text-muted-foreground">Record a spending</div>
+              </div>
+            </Button>
+          )
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

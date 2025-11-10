@@ -119,15 +119,6 @@ export default async function DashboardPage() {
               groups={userGroups}
               groupsWithMembers={userGroups}
               currentUserId={user.id}
-              trigger={
-                <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
-                  <Receipt className="h-5 w-5 flex-shrink-0" />
-                  <div className="text-left">
-                    <div className="font-semibold text-sm">Add Expense</div>
-                    <div className="text-xs text-muted-foreground">Record a spending</div>
-                  </div>
-                </Button>
-              }
             />
 
             <CreateSavingDialog 
