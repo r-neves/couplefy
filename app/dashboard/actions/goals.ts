@@ -2,18 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { goals, users, groupMembers } from "@/lib/db/schema";
-import { eq, and, or, isNull, inArray } from "drizzle-orm";
+import { goals, groupMembers } from "@/lib/db/schema";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDbUserId } from "@/lib/utils/user";
 
-export async function createGoal(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Core functions that accept userId directly
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function createGoal(formData: FormData, userId: string) {
   const name = formData.get("name") as string;
   const targetAmount = formData.get("targetAmount") as string || null;
   const color = formData.get("color") as string || "#10b981";
@@ -26,20 +22,12 @@ export async function createGoal(formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // If groupId is provided, verify user is a member
     if (groupId) {
       const membership = await db.query.groupMembers.findFirst({
         where: and(
           eq(groupMembers.groupId, groupId),
-          eq(groupMembers.userId, dbUser.id)
+          eq(groupMembers.userId, userId)
         ),
       });
 
@@ -49,7 +37,7 @@ export async function createGoal(formData: FormData) {
     }
 
     const [goal] = await db.insert(goals).values({
-      userId: groupId ? null : dbUser.id, // Group goals don't have a userId
+      userId: groupId ? null : userId, // Group goals don't have a userId
       groupId: groupId || null,
       name,
       targetAmount,
@@ -66,14 +54,7 @@ export async function createGoal(formData: FormData) {
   }
 }
 
-export async function updateGoal(goalId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function updateGoal(goalId: string, formData: FormData, userId: string) {
   const name = formData.get("name") as string;
   const targetAmount = formData.get("targetAmount") as string || null;
   const color = formData.get("color") as string || "#10b981";
@@ -85,14 +66,6 @@ export async function updateGoal(goalId: string, formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership or group membership
     const goal = await db.query.goals.findFirst({
       where: eq(goals.id, goalId),
@@ -103,7 +76,7 @@ export async function updateGoal(goalId: string, formData: FormData) {
     }
 
     // Check if user has permission to edit
-    if (goal.userId && goal.userId !== dbUser.id) {
+    if (goal.userId && goal.userId !== userId) {
       return { error: "Unauthorized" };
     }
 
@@ -111,7 +84,7 @@ export async function updateGoal(goalId: string, formData: FormData) {
       const membership = await db.query.groupMembers.findFirst({
         where: and(
           eq(groupMembers.groupId, goal.groupId),
-          eq(groupMembers.userId, dbUser.id)
+          eq(groupMembers.userId, userId)
         ),
       });
 
@@ -139,23 +112,8 @@ export async function updateGoal(goalId: string, formData: FormData) {
   }
 }
 
-export async function deleteGoal(goalId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function deleteGoal(goalId: string, userId: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership or group membership
     const goal = await db.query.goals.findFirst({
       where: eq(goals.id, goalId),
@@ -166,7 +124,7 @@ export async function deleteGoal(goalId: string) {
     }
 
     // Check if user has permission to delete
-    if (goal.userId && goal.userId !== dbUser.id) {
+    if (goal.userId && goal.userId !== userId) {
       return { error: "Unauthorized" };
     }
 
@@ -174,7 +132,7 @@ export async function deleteGoal(goalId: string) {
       const membership = await db.query.groupMembers.findFirst({
         where: and(
           eq(groupMembers.groupId, goal.groupId),
-          eq(groupMembers.userId, dbUser.id)
+          eq(groupMembers.userId, userId)
         ),
       });
 
@@ -193,26 +151,11 @@ export async function deleteGoal(goalId: string) {
   }
 }
 
-export async function getUserGoals() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function getUserGoals(userId: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Get all groups the user is a member of
     const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, dbUser.id),
+      where: eq(groupMembers.userId, userId),
     });
 
     const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
@@ -221,11 +164,11 @@ export async function getUserGoals() {
     let condition;
     if (userGroupIds.length > 0) {
       condition = or(
-        eq(goals.userId, dbUser.id),
+        eq(goals.userId, userId),
         inArray(goals.groupId, userGroupIds)
       );
     } else {
-      condition = eq(goals.userId, dbUser.id);
+      condition = eq(goals.userId, userId);
     }
 
     const userGoals = await db.query.goals.findMany({
@@ -241,4 +184,70 @@ export async function getUserGoals() {
     console.error("Error getting goals:", error);
     return { error: "Failed to get goals" };
   }
+}
+
+// Client-facing wrapper functions that fetch userId automatically
+
+export async function createGoalFromClient(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return createGoal(formData, userId);
+}
+
+export async function updateGoalFromClient(goalId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return updateGoal(goalId, formData, userId);
+}
+
+export async function deleteGoalFromClient(goalId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return deleteGoal(goalId, userId);
+}
+
+export async function getUserGoalsFromClient() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return getUserGoals(userId);
 }

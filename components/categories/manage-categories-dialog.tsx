@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { deleteCategory, updateCategory } from "@/app/dashboard/actions/categories";
+import { deleteCategoryFromClient, updateCategoryFromClient } from "@/app/dashboard/actions/categories";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -49,7 +49,7 @@ export function ManageCategoriesDialog({ categories, groups, trigger }: ManageCa
 
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const result = await updateCategory(editingCategory.id, formData);
+    const result = await updateCategoryFromClient(editingCategory.id, formData);
 
     if (result.success) {
       setEditingCategory(null);
@@ -62,7 +62,7 @@ export function ManageCategoriesDialog({ categories, groups, trigger }: ManageCa
   async function handleDelete() {
     if (!deletingCategoryId) return;
 
-    const result = await deleteCategory(deletingCategoryId);
+    const result = await deleteCategoryFromClient(deletingCategoryId);
     if (result.success) {
       setDeletingCategoryId(null);
     } else {

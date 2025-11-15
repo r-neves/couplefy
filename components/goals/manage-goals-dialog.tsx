@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { deleteGoal, updateGoal } from "@/app/dashboard/actions/goals";
+import { deleteGoalFromClient, updateGoalFromClient } from "@/app/dashboard/actions/goals";
 import { Pencil, Trash2 } from "lucide-react";
 import { CurrencyDisplay } from "@/components/ui/currency-display";
 import {
@@ -50,7 +50,7 @@ export function ManageGoalsDialog({ goals, groups, trigger }: ManageGoalsDialogP
 
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const result = await updateGoal(editingGoal.id, formData);
+    const result = await updateGoalFromClient(editingGoal.id, formData);
 
     if (result.success) {
       setEditingGoal(null);
@@ -63,7 +63,7 @@ export function ManageGoalsDialog({ goals, groups, trigger }: ManageGoalsDialogP
   async function handleDelete() {
     if (!deletingGoalId) return;
 
-    const result = await deleteGoal(deletingGoalId);
+    const result = await deleteGoalFromClient(deletingGoalId);
     if (result.success) {
       setDeletingGoalId(null);
     } else {

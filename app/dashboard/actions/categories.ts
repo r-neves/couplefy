@@ -2,18 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { categories, users, groupMembers } from "@/lib/db/schema";
+import { categories, groupMembers } from "@/lib/db/schema";
 import { eq, and, or, isNull, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDbUserId } from "@/lib/utils/user";
 
-export async function createCategory(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Core functions that accept userId directly
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function createCategory(formData: FormData, userId: string) {
   const name = formData.get("name") as string;
   const color = formData.get("color") as string;
   const icon = formData.get("icon") as string || null;
@@ -24,20 +20,12 @@ export async function createCategory(formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Create category
     const [category] = await db.insert(categories).values({
       name: name.trim(),
       color: color || "#6366f1",
       icon,
-      userId: groupId ? null : dbUser.id, // null if group category
+      userId: groupId ? null : userId, // null if group category
       groupId: groupId || null,
     }).returning();
 
@@ -49,26 +37,11 @@ export async function createCategory(formData: FormData) {
   }
 }
 
-export async function getUserCategories(groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function getUserCategories(userId: string, groupId?: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Get all groups the user is a member of
     const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, dbUser.id),
+      where: eq(groupMembers.userId, userId),
     });
 
     const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
@@ -83,13 +56,13 @@ export async function getUserCategories(groupId?: string) {
       if (userGroupIds.length > 0) {
         whereCondition = or(
           // Personal categories (no groupId, created by user)
-          and(eq(categories.userId, dbUser.id), isNull(categories.groupId)),
+          and(eq(categories.userId, userId), isNull(categories.groupId)),
           // Shared categories (in any of user's groups)
           inArray(categories.groupId, userGroupIds)
         );
       } else {
         // User has no groups, only show personal categories
-        whereCondition = and(eq(categories.userId, dbUser.id), isNull(categories.groupId));
+        whereCondition = and(eq(categories.userId, userId), isNull(categories.groupId));
       }
     }
 
@@ -105,14 +78,7 @@ export async function getUserCategories(groupId?: string) {
   }
 }
 
-export async function updateCategory(categoryId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function updateCategory(categoryId: string, formData: FormData, userId: string) {
   const name = formData.get("name") as string;
   const color = formData.get("color") as string || "#6366f1";
 
@@ -121,14 +87,6 @@ export async function updateCategory(categoryId: string, formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership or group membership
     const category = await db.query.categories.findFirst({
       where: eq(categories.id, categoryId),
@@ -139,7 +97,7 @@ export async function updateCategory(categoryId: string, formData: FormData) {
     }
 
     // Check if user has permission to edit
-    if (category.userId && category.userId !== dbUser.id) {
+    if (category.userId && category.userId !== userId) {
       return { error: "Unauthorized" };
     }
 
@@ -147,7 +105,7 @@ export async function updateCategory(categoryId: string, formData: FormData) {
       const membership = await db.query.groupMembers.findFirst({
         where: and(
           eq(groupMembers.groupId, category.groupId),
-          eq(groupMembers.userId, dbUser.id)
+          eq(groupMembers.userId, userId)
         ),
       });
 
@@ -172,23 +130,8 @@ export async function updateCategory(categoryId: string, formData: FormData) {
   }
 }
 
-export async function deleteCategory(categoryId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function deleteCategory(categoryId: string, userId: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Check if user owns this category
     const category = await db.query.categories.findFirst({
       where: eq(categories.id, categoryId),
@@ -199,7 +142,7 @@ export async function deleteCategory(categoryId: string) {
     }
 
     // Check if user has permission to delete
-    if (category.userId && category.userId !== dbUser.id) {
+    if (category.userId && category.userId !== userId) {
       return { error: "You don't have permission to delete this category" };
     }
 
@@ -208,7 +151,7 @@ export async function deleteCategory(categoryId: string) {
       const membership = await db.query.groupMembers.findFirst({
         where: and(
           eq(groupMembers.groupId, category.groupId),
-          eq(groupMembers.userId, dbUser.id)
+          eq(groupMembers.userId, userId)
         ),
       });
 
@@ -229,4 +172,70 @@ export async function deleteCategory(categoryId: string) {
     }
     return { error: "Failed to delete category" };
   }
+}
+
+// Client-facing wrapper functions that fetch userId automatically
+
+export async function createCategoryFromClient(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return createCategory(formData, userId);
+}
+
+export async function getUserCategoriesFromClient(groupId?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return getUserCategories(userId, groupId);
+}
+
+export async function updateCategoryFromClient(categoryId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return updateCategory(categoryId, formData, userId);
+}
+
+export async function deleteCategoryFromClient(categoryId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return deleteCategory(categoryId, userId);
 }

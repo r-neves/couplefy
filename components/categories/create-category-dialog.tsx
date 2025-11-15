@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createCategory } from "@/app/dashboard/actions/categories";
+import { createCategoryFromClient } from "@/app/dashboard/actions/categories";
 import { useRouter } from "next/navigation";
 
 interface Group {
@@ -52,7 +52,7 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
     }
     formData.append("type", type);
 
-    const result = await createCategory(formData);
+    const result = await createCategoryFromClient(formData);
 
     if (result.error) {
       setError(result.error);

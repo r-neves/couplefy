@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { deleteExpense } from "@/app/dashboard/actions/expenses";
+import { deleteExpenseFromClient } from "@/app/dashboard/actions/expenses";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
@@ -35,7 +35,7 @@ export function DeleteExpenseDialog({
     setIsLoading(true);
     setError("");
 
-    const result = await deleteExpense(expenseId);
+    const result = await deleteExpenseFromClient(expenseId);
 
     if (result.error) {
       setError(result.error);

@@ -37,23 +37,23 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
   const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
   // Get current user's DB ID first
-  const { db } = await import("@/lib/db");
-  const { users: usersSchema } = await import("@/lib/db/schema");
-  const { eq } = await import("drizzle-orm");
+  const { getDbUserId } = await import("@/lib/utils/user");
+  const userId = await getDbUserId(user.id);
+
+  if (!userId) {
+    redirect("/");
+  }
 
   // Run all data fetches in parallel for better performance
-  const [savingsResult, goalsResult, groupsResult, currentUser] = await Promise.all([
+  const [savingsResult, goalsResult, groupsResult] = await Promise.all([
     isAllTime
-      ? getSavings({})
-      : getSavings({
+      ? getSavings(userId, {})
+      : getSavings(userId, {
           startDate: new Date(year, month - 1, 1),
           endDate: new Date(year, month, 0),
         }),
-    getUserGoals(),
-    getUserGroups(),
-    db.query.users.findFirst({
-      where: eq(usersSchema.supabaseId, user.id),
-    }),
+    getUserGoals(userId),
+    getUserGroups(userId),
   ]);
 
   const savings = savingsResult.success ? savingsResult.savings : [];
@@ -94,7 +94,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
   const goalData = Object.values(goalBreakdown);
 
   // Calculate goal progress (all time, not just this month)
-  const allTimeSavingsResult = await getSavings({});
+  const allTimeSavingsResult = await getSavings(userId, {});
   const allTimeSavings = allTimeSavingsResult.success ? allTimeSavingsResult.savings : [];
 
   const goalProgress = goals.map(goal => {
@@ -188,7 +188,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
                 goals={goals}
                 groups={groups}
                 groupsWithMembers={groupsWithMembers}
-                currentUserId={currentUser?.id || ""}
+                currentUserId={userId}
                 simple
               />
             </div>
@@ -199,7 +199,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               goals={goals}
               groups={groups}
               groupsWithMembers={groupsWithMembers}
-              currentUserId={currentUser?.id || ""}
+              currentUserId={userId}
             />
           </CardContent>
         </Card>

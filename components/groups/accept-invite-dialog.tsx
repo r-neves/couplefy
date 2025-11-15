@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { acceptInvite } from "@/app/dashboard/actions/groups";
+import { acceptInviteFromClient } from "@/app/dashboard/actions/groups";
 import { useRouter } from "next/navigation";
 
 export function AcceptInviteDialog() {
@@ -28,7 +28,7 @@ export function AcceptInviteDialog() {
     setIsLoading(true);
     setError("");
 
-    const result = await acceptInvite(inviteCode);
+    const result = await acceptInviteFromClient(inviteCode);
 
     if (result.error) {
       setError(result.error);

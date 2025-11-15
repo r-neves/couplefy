@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createExpense } from "@/app/dashboard/actions/expenses";
+import { createExpenseFromClient } from "@/app/dashboard/actions/expenses";
 import { useRouter } from "next/navigation";
 import { Plus, Receipt } from "lucide-react";
 
@@ -107,7 +107,7 @@ export function CreateExpenseDialog({ categories, groups, groupsWithMembers, cur
       formData.append("paidById", paidById);
     }
 
-    const result = await createExpense(formData);
+    const result = await createExpenseFromClient(formData);
 
     if (result.error) {
       setError(result.error);

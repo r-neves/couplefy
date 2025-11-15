@@ -2,22 +2,16 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { groups, groupMembers, invites, users } from "@/lib/db/schema";
+import { groups, groupMembers, invites } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDbUserId } from "@/lib/utils/user";
 
 function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
-export async function createGroup(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function createGroup(formData: FormData, userId: string) {
   const name = formData.get("name") as string;
 
   if (!name || name.trim().length === 0) {
@@ -25,25 +19,16 @@ export async function createGroup(formData: FormData) {
   }
 
   try {
-    // Get user from our database
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found in database" };
-    }
-
     // Create the group
     const [group] = await db.insert(groups).values({
       name: name.trim(),
-      createdBy: dbUser.id,
+      createdBy: userId,
     }).returning();
 
     // Add creator as first member
     await db.insert(groupMembers).values({
       groupId: group.id,
-      userId: dbUser.id,
+      userId: userId,
     });
 
     revalidatePath("/dashboard");
@@ -54,29 +39,13 @@ export async function createGroup(formData: FormData) {
   }
 }
 
-export async function generateInvite(groupId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function generateInvite(groupId: string, userId: string) {
   try {
-    // Get user from our database
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found in database" };
-    }
-
     // Verify user is a member of the group
     const membership = await db.query.groupMembers.findFirst({
       where: and(
         eq(groupMembers.groupId, groupId),
-        eq(groupMembers.userId, dbUser.id)
+        eq(groupMembers.userId, userId)
       ),
     });
 
@@ -93,7 +62,7 @@ export async function generateInvite(groupId: string) {
 
     const [invite] = await db.insert(invites).values({
       groupId,
-      invitedBy: dbUser.id,
+      invitedBy: userId,
       inviteCode,
       expiresAt,
     }).returning();
@@ -105,24 +74,8 @@ export async function generateInvite(groupId: string) {
   }
 }
 
-export async function acceptInvite(inviteCode: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function acceptInvite(inviteCode: string, userId: string) {
   try {
-    // Get user from our database
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found in database" };
-    }
-
     // Find the invite
     const invite = await db.query.invites.findFirst({
       where: and(
@@ -150,7 +103,7 @@ export async function acceptInvite(inviteCode: string) {
     const existingMembership = await db.query.groupMembers.findFirst({
       where: and(
         eq(groupMembers.groupId, invite.groupId),
-        eq(groupMembers.userId, dbUser.id)
+        eq(groupMembers.userId, userId)
       ),
     });
 
@@ -161,7 +114,7 @@ export async function acceptInvite(inviteCode: string) {
     // Add user to group
     await db.insert(groupMembers).values({
       groupId: invite.groupId,
-      userId: dbUser.id,
+      userId: userId,
     });
 
     // Update invite status
@@ -177,27 +130,11 @@ export async function acceptInvite(inviteCode: string) {
   }
 }
 
-export async function getUserGroups() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function getUserGroups(userId: string) {
   try {
-    // Get user from our database
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found in database" };
-    }
-
     // Get all groups the user is a member of
     const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, dbUser.id),
+      where: eq(groupMembers.userId, userId),
       with: {
         group: {
           with: {
@@ -219,4 +156,55 @@ export async function getUserGroups() {
     console.error("Error getting user groups:", error);
     return { error: "Failed to get groups" };
   }
+}
+
+// Client-facing wrapper functions that fetch userId automatically
+// These are used by client components that can't pass userId directly
+
+export async function createGroupFromClient(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return createGroup(formData, userId);
+}
+
+export async function generateInviteFromClient(groupId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return generateInvite(groupId, userId);
+}
+
+export async function acceptInviteFromClient(inviteCode: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return acceptInvite(inviteCode, userId);
 }

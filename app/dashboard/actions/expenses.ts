@@ -2,18 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { expenses, users, groupMembers } from "@/lib/db/schema";
+import { expenses, groupMembers } from "@/lib/db/schema";
 import { eq, and, gte, lte, desc, or, isNull, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDbUserId } from "@/lib/utils/user";
 
-export async function createExpense(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Core functions that accept userId directly
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function createExpense(formData: FormData, userId: string) {
   const amount = formData.get("amount") as string;
   const categoryId = formData.get("categoryId") as string;
   const description = formData.get("description") as string || null;
@@ -26,17 +22,9 @@ export async function createExpense(formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // For group expenses, use paidById if provided, otherwise use current user
     // For personal expenses, always use current user
-    const expenseUserId = groupId && paidById ? paidById : dbUser.id;
+    const expenseUserId = groupId && paidById ? paidById : userId;
 
     const [expense] = await db.insert(expenses).values({
       userId: expenseUserId,
@@ -55,14 +43,7 @@ export async function createExpense(formData: FormData) {
   }
 }
 
-export async function updateExpense(expenseId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function updateExpense(expenseId: string, formData: FormData, userId: string) {
   const amount = formData.get("amount") as string;
   const categoryId = formData.get("categoryId") as string;
   const description = formData.get("description") as string || null;
@@ -73,20 +54,12 @@ export async function updateExpense(expenseId: string, formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership
     const expense = await db.query.expenses.findFirst({
       where: eq(expenses.id, expenseId),
     });
 
-    if (!expense || expense.userId !== dbUser.id) {
+    if (!expense || expense.userId !== userId) {
       return { error: "Expense not found or unauthorized" };
     }
 
@@ -108,29 +81,14 @@ export async function updateExpense(expenseId: string, formData: FormData) {
   }
 }
 
-export async function deleteExpense(expenseId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function deleteExpense(expenseId: string, userId: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership
     const expense = await db.query.expenses.findFirst({
       where: eq(expenses.id, expenseId),
     });
 
-    if (!expense || expense.userId !== dbUser.id) {
+    if (!expense || expense.userId !== userId) {
       return { error: "Expense not found or unauthorized" };
     }
 
@@ -144,30 +102,15 @@ export async function deleteExpense(expenseId: string) {
   }
 }
 
-export async function getExpenses(params?: {
+export async function getExpenses(userId: string, params?: {
   groupId?: string;
   startDate?: Date;
   endDate?: Date;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Get all groups the user is a member of
     const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, dbUser.id),
+      where: eq(groupMembers.userId, userId),
     });
 
     const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
@@ -178,7 +121,7 @@ export async function getExpenses(params?: {
       baseCondition = or(
         // Personal expenses (no groupId, created by user)
         and(
-          eq(expenses.userId, dbUser.id),
+          eq(expenses.userId, userId),
           isNull(expenses.groupId)
         ),
         // Shared expenses (in any of user's groups)
@@ -187,7 +130,7 @@ export async function getExpenses(params?: {
     } else {
       // User has no groups, only show personal expenses
       baseCondition = and(
-        eq(expenses.userId, dbUser.id),
+        eq(expenses.userId, userId),
         isNull(expenses.groupId)
       );
     }
@@ -226,4 +169,74 @@ export async function getExpenses(params?: {
     console.error("Error getting expenses:", error);
     return { error: "Failed to get expenses" };
   }
+}
+
+// Client-facing wrapper functions that fetch userId automatically
+
+export async function createExpenseFromClient(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return createExpense(formData, userId);
+}
+
+export async function updateExpenseFromClient(expenseId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return updateExpense(expenseId, formData, userId);
+}
+
+export async function deleteExpenseFromClient(expenseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return deleteExpense(expenseId, userId);
+}
+
+export async function getExpensesFromClient(params?: {
+  groupId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return getExpenses(userId, params);
 }

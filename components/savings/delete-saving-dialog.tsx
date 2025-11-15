@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { deleteSaving } from "@/app/dashboard/actions/savings";
+import { deleteSavingFromClient } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
@@ -35,7 +35,7 @@ export function DeleteSavingDialog({
     setIsLoading(true);
     setError("");
 
-    const result = await deleteSaving(savingId);
+    const result = await deleteSavingFromClient(savingId);
 
     if (result.error) {
       setError(result.error);

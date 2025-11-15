@@ -37,24 +37,24 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
   const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  // Get current user's DB ID first (needed for other queries)
-  const { db } = await import("@/lib/db");
-  const { users: usersSchema } = await import("@/lib/db/schema");
-  const { eq } = await import("drizzle-orm");
-  
+  // Get current user's DB ID first
+  const { getDbUserId } = await import("@/lib/utils/user");
+  const userId = await getDbUserId(user.id);
+
+  if (!userId) {
+    redirect("/");
+  }
+
   // Run all data fetches in parallel for better performance
-  const [expensesResult, categoriesResult, groupsResult, currentUser] = await Promise.all([
-    isAllTime 
-      ? getExpenses({})
-      : getExpenses({
+  const [expensesResult, categoriesResult, groupsResult] = await Promise.all([
+    isAllTime
+      ? getExpenses(userId, {})
+      : getExpenses(userId, {
           startDate: new Date(year, month - 1, 1),
           endDate: new Date(year, month, 0),
         }),
-    getUserCategories(),
-    getUserGroups(),
-    db.query.users.findFirst({
-      where: eq(usersSchema.supabaseId, user.id),
-    }),
+    getUserCategories(userId),
+    getUserGroups(userId),
   ]);
 
   const expenses = expensesResult.success ? expensesResult.expenses : [];
@@ -307,7 +307,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                 categories={categories}
                 groups={groups}
                 groupsWithMembers={groupsWithMembers}
-                currentUserId={currentUser?.id || ""}
+                currentUserId={userId}
               />
             </div>
           </CardHeader>
@@ -317,7 +317,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               categories={categories}
               groups={groups}
               groupsWithMembers={groupsWithMembers}
-              currentUserId={currentUser?.id || ""}
+              currentUserId={userId}
             />
           </CardContent>
         </Card>

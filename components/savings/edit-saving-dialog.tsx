@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateSaving } from "@/app/dashboard/actions/savings";
+import { updateSavingFromClient } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 
 interface Goal {
@@ -123,7 +123,7 @@ export function EditSavingDialog({
       formData.append("paidById", paidById);
     }
 
-    const result = await updateSaving(saving.id, formData);
+    const result = await updateSavingFromClient(saving.id, formData);
 
     if (result.error) {
       setError(result.error);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createGoal } from "@/app/dashboard/actions/goals";
+import { createGoalFromClient } from "@/app/dashboard/actions/goals";
 
 interface Group {
   id: string;
@@ -33,7 +33,7 @@ export function CreateGoalDialog({ groups, trigger }: CreateGoalDialogProps) {
       formData.append("groupId", groupId);
     }
 
-    const result = await createGoal(formData);
+    const result = await createGoalFromClient(formData);
 
     if (result.success) {
       setOpen(false);

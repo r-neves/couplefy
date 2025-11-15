@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createGroup } from "@/app/dashboard/actions/groups";
+import { createGroupFromClient } from "@/app/dashboard/actions/groups";
 import { useRouter } from "next/navigation";
 
 export function CreateGroupDialog() {
@@ -28,7 +28,7 @@ export function CreateGroupDialog() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const result = await createGroup(formData);
+    const result = await createGroupFromClient(formData);
 
     if (result.error) {
       setError(result.error);

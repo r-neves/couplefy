@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { generateInvite } from "@/app/dashboard/actions/groups";
+import { generateInviteFromClient } from "@/app/dashboard/actions/groups";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -30,11 +30,11 @@ export function InviteDialog({ groupId, groupName }: InviteDialogProps) {
     setIsLoading(true);
     setError("");
 
-    const result = await generateInvite(groupId);
+    const result = await generateInviteFromClient(groupId);
 
     if (result.error) {
       setError(result.error);
-    } else if (result.inviteCode) {
+    } else if ("inviteCode" in result && result.inviteCode) {
       setInviteCode(result.inviteCode);
     }
 

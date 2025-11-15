@@ -27,6 +27,14 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
+  // Get current user's DB ID
+  const { getDbUserId } = await import("@/lib/utils/user");
+  const userId = await getDbUserId(user.id);
+
+  if (!userId) {
+    redirect("/");
+  }
+
   // Get current month's dates
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -34,11 +42,11 @@ export default async function DashboardPage() {
 
   // Run all data fetches in parallel for better performance
   const [groupsResult, expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
-    getUserGroups(),
-    getExpenses({ startDate: startOfMonth, endDate: endOfMonth }),
-    getSavings({ startDate: startOfMonth, endDate: endOfMonth }),
-    getUserCategories(),
-    getUserGoals(),
+    getUserGroups(userId),
+    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth }),
+    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth }),
+    getUserCategories(userId),
+    getUserGoals(userId),
   ]);
 
   const userGroups = groupsResult.success ? groupsResult.groups : [];

@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createSaving } from "@/app/dashboard/actions/savings";
+import { createSavingFromClient } from "@/app/dashboard/actions/savings";
 import { useRouter } from "next/navigation";
 import { PiggyBank, Plus } from "lucide-react";
 
@@ -108,7 +108,7 @@ export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUs
       formData.append("paidById", paidById);
     }
 
-    const result = await createSaving(formData);
+    const result = await createSavingFromClient(formData);
 
     if (result.error) {
       setError(result.error);

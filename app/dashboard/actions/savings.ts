@@ -2,18 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { savings, users, groupMembers } from "@/lib/db/schema";
+import { savings, groupMembers } from "@/lib/db/schema";
 import { eq, and, gte, lte, desc, or, isNull, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDbUserId } from "@/lib/utils/user";
 
-export async function createSaving(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Core functions that accept userId directly
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function createSaving(formData: FormData, userId: string) {
   const amount = formData.get("amount") as string;
   const goalId = formData.get("goalId") as string;
   const description = formData.get("description") as string || null;
@@ -26,17 +22,9 @@ export async function createSaving(formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // For group savings, use paidById if provided, otherwise use current user
     // For personal savings, always use current user
-    const savingUserId = groupId && paidById ? paidById : dbUser.id;
+    const savingUserId = groupId && paidById ? paidById : userId;
 
     const [saving] = await db.insert(savings).values({
       userId: savingUserId,
@@ -55,14 +43,7 @@ export async function createSaving(formData: FormData) {
   }
 }
 
-export async function updateSaving(savingId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function updateSaving(savingId: string, formData: FormData, userId: string) {
   const amount = formData.get("amount") as string;
   const goalId = formData.get("goalId") as string;
   const description = formData.get("description") as string || null;
@@ -73,20 +54,12 @@ export async function updateSaving(savingId: string, formData: FormData) {
   }
 
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership
     const saving = await db.query.savings.findFirst({
       where: eq(savings.id, savingId),
     });
 
-    if (!saving || saving.userId !== dbUser.id) {
+    if (!saving || saving.userId !== userId) {
       return { error: "Saving not found or unauthorized" };
     }
 
@@ -108,29 +81,14 @@ export async function updateSaving(savingId: string, formData: FormData) {
   }
 }
 
-export async function deleteSaving(savingId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
+export async function deleteSaving(savingId: string, userId: string) {
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Verify ownership
     const saving = await db.query.savings.findFirst({
       where: eq(savings.id, savingId),
     });
 
-    if (!saving || saving.userId !== dbUser.id) {
+    if (!saving || saving.userId !== userId) {
       return { error: "Saving not found or unauthorized" };
     }
 
@@ -144,30 +102,15 @@ export async function deleteSaving(savingId: string) {
   }
 }
 
-export async function getSavings(params?: {
+export async function getSavings(userId: string, params?: {
   groupId?: string;
   startDate?: Date;
   endDate?: Date;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
   try {
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.supabaseId, user.id),
-    });
-
-    if (!dbUser) {
-      return { error: "User not found" };
-    }
-
     // Get all groups the user is a member of
     const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, dbUser.id),
+      where: eq(groupMembers.userId, userId),
     });
 
     const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
@@ -178,7 +121,7 @@ export async function getSavings(params?: {
       baseCondition = or(
         // Personal savings (no groupId, created by user)
         and(
-          eq(savings.userId, dbUser.id),
+          eq(savings.userId, userId),
           isNull(savings.groupId)
         ),
         // Shared savings (in any of user's groups)
@@ -187,7 +130,7 @@ export async function getSavings(params?: {
     } else {
       // User has no groups, only show personal savings
       baseCondition = and(
-        eq(savings.userId, dbUser.id),
+        eq(savings.userId, userId),
         isNull(savings.groupId)
       );
     }
@@ -226,4 +169,74 @@ export async function getSavings(params?: {
     console.error("Error getting savings:", error);
     return { error: "Failed to get savings" };
   }
+}
+
+// Client-facing wrapper functions that fetch userId automatically
+
+export async function createSavingFromClient(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return createSaving(formData, userId);
+}
+
+export async function updateSavingFromClient(savingId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return updateSaving(savingId, formData, userId);
+}
+
+export async function deleteSavingFromClient(savingId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return deleteSaving(savingId, userId);
+}
+
+export async function getSavingsFromClient(params?: {
+  groupId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return getSavings(userId, params);
 }

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateExpense } from "@/app/dashboard/actions/expenses";
+import { updateExpenseFromClient } from "@/app/dashboard/actions/expenses";
 import { useRouter } from "next/navigation";
 
 interface Category {
@@ -128,7 +128,7 @@ export function EditExpenseDialog({
       formData.append("paidById", paidById);
     }
 
-    const result = await updateExpense(expense.id, formData);
+    const result = await updateExpenseFromClient(expense.id, formData);
 
     if (result.error) {
       setError(result.error);
