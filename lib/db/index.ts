@@ -11,7 +11,7 @@ const connectionString = process.env.DATABASE_URL ||
 const client = postgres(connectionString, {
   prepare: false,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  max: 1, // Limit connections in serverless
+  max: 15, // Limit connections in serverless
   debug: (_connection, query, _params) => {
     // Only trace if OTEL is enabled
     if (process.env.OTEL_ENABLED !== 'true' && process.env.NODE_ENV !== 'production') {
