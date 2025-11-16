@@ -21,14 +21,16 @@ const getDatabaseUrl = () => {
   return `postgresql://${user}:${password}@${host}:${port}/${database}`;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+const prismaClientSingleton = () => {
+  return new PrismaClient({
     datasourceUrl: getDatabaseUrl(),
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
   });
+};
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

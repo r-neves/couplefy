@@ -2,10 +2,11 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
-import { 
-  ATTR_SERVICE_NAME, 
-  ATTR_SERVICE_VERSION 
+import {
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_VERSION
 } from '@opentelemetry/semantic-conventions';
+import { PrismaInstrumentation } from '@prisma/instrumentation';
 
 // Only initialize in production or when explicitly enabled
 const isEnabled = process.env.OTEL_ENABLED === 'true' || process.env.NODE_ENV === 'production';
@@ -108,6 +109,7 @@ export async function register() {
           enabled: true,
         },
       }),
+      new PrismaInstrumentation(),
     ],
   });
 
