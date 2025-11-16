@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
+import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
 
@@ -109,15 +110,11 @@ export async function getSavings(userId: string, params?: {
   groupId?: string;
   startDate?: Date;
   endDate?: Date;
+  userGroupIds?: string[]; // Optional: pass in to avoid duplicate queries
 }) {
   try {
-    // Get all groups the user is a member of
-    const userGroupMemberships = await prisma.group_members.findMany({
-      where: { user_id: userId },
-      select: { group_id: true },
-    });
-
-    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
+    // Get all groups the user is a member of (or use provided userGroupIds)
+    const userGroupIds = params?.userGroupIds ?? await getUserGroupIds(userId);
 
     // Build where condition
     const whereCondition: any = {};

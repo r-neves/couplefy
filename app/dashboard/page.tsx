@@ -40,13 +40,18 @@ export default async function DashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+  // Fetch user's group IDs once to avoid duplicate queries
+  const { getUserGroupIds } = await import("@/lib/utils/groups");
+  const userGroupIds = await getUserGroupIds(userId);
+
   // Run all data fetches in parallel for better performance
+  // Pass userGroupIds to avoid each function querying for it independently
   const [groupsResult, expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
     getUserGroups(userId),
-    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth }),
-    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth }),
-    getUserCategories(userId),
-    getUserGoals(userId),
+    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds }),
+    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds }),
+    getUserCategories(userId, undefined, userGroupIds),
+    getUserGoals(userId, userGroupIds),
   ]);
 
   const userGroups = groupsResult.success ? groupsResult.groups : [];

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
+import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
 
@@ -37,15 +38,10 @@ export async function createCategory(formData: FormData, userId: string) {
   }
 }
 
-export async function getUserCategories(userId: string, groupId?: string) {
+export async function getUserCategories(userId: string, groupId?: string, userGroupIds?: string[]) {
   try {
-    // Get all groups the user is a member of
-    const userGroupMemberships = await prisma.group_members.findMany({
-      where: { user_id: userId },
-      select: { group_id: true },
-    });
-
-    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
+    // Get all groups the user is a member of (or use provided userGroupIds)
+    const groupIds = userGroupIds ?? await getUserGroupIds(userId);
 
     let userCategories;
 
@@ -57,14 +53,14 @@ export async function getUserCategories(userId: string, groupId?: string) {
       });
     } else {
       // Get personal categories and all shared categories from user's groups
-      if (userGroupIds.length > 0) {
+      if (groupIds.length > 0) {
         userCategories = await prisma.categories.findMany({
           where: {
             OR: [
               // Personal categories (no groupId, created by user)
               { user_id: userId, group_id: null },
               // Shared categories (in any of user's groups)
-              { group_id: { in: userGroupIds } },
+              { group_id: { in: groupIds } },
             ],
           },
           orderBy: { name: "asc" },

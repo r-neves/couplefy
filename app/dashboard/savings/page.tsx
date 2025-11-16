@@ -44,15 +44,20 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
     redirect("/");
   }
 
+  // Fetch user's group IDs once to avoid duplicate queries
+  const { getUserGroupIds } = await import("@/lib/utils/groups");
+  const userGroupIds = await getUserGroupIds(userId);
+
   // Run all data fetches in parallel for better performance
   const [savingsResult, goalsResult, groupsResult] = await Promise.all([
     isAllTime
-      ? getSavings(userId, {})
+      ? getSavings(userId, { userGroupIds })
       : getSavings(userId, {
           startDate: new Date(year, month - 1, 1),
           endDate: new Date(year, month, 0),
+          userGroupIds,
         }),
-    getUserGoals(userId),
+    getUserGoals(userId, userGroupIds),
     getUserGroups(userId),
   ]);
 

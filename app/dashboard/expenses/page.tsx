@@ -45,15 +45,20 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
     redirect("/");
   }
 
+  // Fetch user's group IDs once to avoid duplicate queries
+  const { getUserGroupIds } = await import("@/lib/utils/groups");
+  const userGroupIds = await getUserGroupIds(userId);
+
   // Run all data fetches in parallel for better performance
   const [expensesResult, categoriesResult, groupsResult] = await Promise.all([
     isAllTime
-      ? getExpenses(userId, {})
+      ? getExpenses(userId, { userGroupIds })
       : getExpenses(userId, {
           startDate: new Date(year, month - 1, 1),
           endDate: new Date(year, month, 0),
+          userGroupIds,
         }),
-    getUserCategories(userId),
+    getUserCategories(userId, undefined, userGroupIds),
     getUserGroups(userId),
   ]);
 

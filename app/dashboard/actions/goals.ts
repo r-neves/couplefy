@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
+import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
 
@@ -154,22 +155,17 @@ export async function deleteGoal(goalId: string, userId: string) {
   }
 }
 
-export async function getUserGoals(userId: string) {
+export async function getUserGoals(userId: string, userGroupIds?: string[]) {
   try {
-    // Get all groups the user is a member of
-    const userGroupMemberships = await prisma.group_members.findMany({
-      where: { user_id: userId },
-      select: { group_id: true },
-    });
-
-    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
+    // Get all groups the user is a member of (or use provided userGroupIds)
+    const groupIds = userGroupIds ?? await getUserGroupIds(userId);
 
     // Get personal goals and goals from user's groups
     const userGoals = await prisma.goals.findMany({
       where: {
         OR: [
           { user_id: userId },
-          { group_id: { in: userGroupIds } },
+          { group_id: { in: groupIds } },
         ],
       },
       include: {
