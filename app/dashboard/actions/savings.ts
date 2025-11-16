@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { savings, groupMembers } from "@/lib/db/schema";
-import { eq, and, gte, lte, desc, or, isNull, inArray } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
 
@@ -26,14 +24,16 @@ export async function createSaving(formData: FormData, userId: string) {
     // For personal savings, always use current user
     const savingUserId = groupId && paidById ? paidById : userId;
 
-    const [saving] = await db.insert(savings).values({
-      userId: savingUserId,
-      groupId: groupId || null,
-      goalId,
-      amount,
-      description,
-      date: new Date(date),
-    }).returning();
+    const saving = await prisma.savings.create({
+      data: {
+        user_id: savingUserId,
+        group_id: groupId || null,
+        goal_id: goalId,
+        amount,
+        description,
+        date: new Date(date),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true, savingId: saving.id };
@@ -55,23 +55,24 @@ export async function updateSaving(savingId: string, formData: FormData, userId:
 
   try {
     // Verify ownership
-    const saving = await db.query.savings.findFirst({
-      where: eq(savings.id, savingId),
+    const saving = await prisma.savings.findUnique({
+      where: { id: savingId },
     });
 
-    if (!saving || saving.userId !== userId) {
+    if (!saving || saving.user_id !== userId) {
       return { error: "Saving not found or unauthorized" };
     }
 
-    await db.update(savings)
-      .set({
+    await prisma.savings.update({
+      where: { id: savingId },
+      data: {
         amount,
-        goalId,
+        goal_id: goalId,
         description,
         date: new Date(date),
-        updatedAt: new Date(),
-      })
-      .where(eq(savings.id, savingId));
+        updated_at: new Date(),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -84,15 +85,17 @@ export async function updateSaving(savingId: string, formData: FormData, userId:
 export async function deleteSaving(savingId: string, userId: string) {
   try {
     // Verify ownership
-    const saving = await db.query.savings.findFirst({
-      where: eq(savings.id, savingId),
+    const saving = await prisma.savings.findUnique({
+      where: { id: savingId },
     });
 
-    if (!saving || saving.userId !== userId) {
+    if (!saving || saving.user_id !== userId) {
       return { error: "Saving not found or unauthorized" };
     }
 
-    await db.delete(savings).where(eq(savings.id, savingId));
+    await prisma.savings.delete({
+      where: { id: savingId },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -109,62 +112,100 @@ export async function getSavings(userId: string, params?: {
 }) {
   try {
     // Get all groups the user is a member of
-    const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, userId),
+    const userGroupMemberships = await prisma.group_members.findMany({
+      where: { user_id: userId },
+      select: { group_id: true },
     });
 
-    const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
+    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
 
-    // Build base condition: personal savings OR shared savings from user's groups
-    let baseCondition;
-    if (userGroupIds.length > 0) {
-      baseCondition = or(
-        // Personal savings (no groupId, created by user)
-        and(
-          eq(savings.userId, userId),
-          isNull(savings.groupId)
-        ),
-        // Shared savings (in any of user's groups)
-        inArray(savings.groupId, userGroupIds)
-      );
-    } else {
-      // User has no groups, only show personal savings
-      baseCondition = and(
-        eq(savings.userId, userId),
-        isNull(savings.groupId)
-      );
-    }
-
-    // Add additional filters
-    let additionalConditions = [];
+    // Build where condition
+    const whereCondition: any = {};
 
     if (params?.groupId) {
-      additionalConditions.push(eq(savings.groupId, params.groupId));
+      // Filter by specific group
+      whereCondition.group_id = params.groupId;
+    } else {
+      // Get personal savings OR shared savings from user's groups
+      if (userGroupIds.length > 0) {
+        whereCondition.OR = [
+          // Personal savings (no groupId, created by user)
+          { user_id: userId, group_id: null },
+          // Shared savings (in any of user's groups)
+          { group_id: { in: userGroupIds } },
+        ];
+      } else {
+        // User has no groups, only show personal savings
+        whereCondition.user_id = userId;
+        whereCondition.group_id = null;
+      }
     }
 
-    if (params?.startDate) {
-      additionalConditions.push(gte(savings.date, params.startDate));
+    // Add date filters
+    if (params?.startDate || params?.endDate) {
+      whereCondition.date = {};
+      if (params.startDate) {
+        whereCondition.date.gte = params.startDate;
+      }
+      if (params.endDate) {
+        whereCondition.date.lte = params.endDate;
+      }
     }
 
-    if (params?.endDate) {
-      additionalConditions.push(lte(savings.date, params.endDate));
-    }
-
-    const finalCondition = additionalConditions.length > 0
-      ? and(baseCondition, ...additionalConditions)
-      : baseCondition;
-
-    const userSavings = await db.query.savings.findMany({
-      where: finalCondition,
-      with: {
-        goal: true,
-        group: true,
-        user: true,
+    const userSavings = await prisma.savings.findMany({
+      where: whereCondition,
+      include: {
+        goals: true,
+        groups: true,
+        users: true,
       },
-      orderBy: [desc(savings.date)],
+      orderBy: { date: "desc" },
     });
 
-    return { success: true, savings: userSavings };
+    // Transform to match expected format
+    const savings = userSavings.map((saving) => ({
+      id: saving.id,
+      userId: saving.user_id,
+      groupId: saving.group_id,
+      goalId: saving.goal_id,
+      amount: saving.amount.toString(),
+      description: saving.description,
+      date: saving.date,
+      createdAt: saving.created_at,
+      updatedAt: saving.updated_at,
+      goal: {
+        id: saving.goals.id,
+        userId: saving.goals.user_id,
+        groupId: saving.goals.group_id,
+        name: saving.goals.name,
+        targetAmount: saving.goals.target_amount?.toString() || null,
+        color: saving.goals.color,
+        icon: saving.goals.icon,
+        description: saving.goals.description,
+        createdAt: saving.goals.created_at,
+        updatedAt: saving.goals.updated_at,
+      },
+      group: saving.groups
+        ? {
+            id: saving.groups.id,
+            name: saving.groups.name,
+            createdBy: saving.groups.created_by,
+            createdAt: saving.groups.created_at,
+            updatedAt: saving.groups.updated_at,
+          }
+        : null,
+      user: {
+        id: saving.users.id,
+        email: saving.users.email,
+        name: saving.users.name,
+        avatarUrl: saving.users.avatar_url,
+        supabaseId: saving.users.supabase_id,
+        createdAt: saving.users.created_at,
+        updatedAt: saving.users.updated_at,
+      },
+    }));
+
+    return { success: true, savings };
   } catch (error) {
     console.error("Error getting savings:", error);
     return { error: "Failed to get savings" };

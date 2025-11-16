@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { expenses, groupMembers } from "@/lib/db/schema";
-import { eq, and, gte, lte, desc, or, isNull, inArray } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
 
@@ -26,14 +24,16 @@ export async function createExpense(formData: FormData, userId: string) {
     // For personal expenses, always use current user
     const expenseUserId = groupId && paidById ? paidById : userId;
 
-    const [expense] = await db.insert(expenses).values({
-      userId: expenseUserId,
-      groupId: groupId || null,
-      categoryId,
-      amount,
-      description,
-      date: new Date(date),
-    }).returning();
+    const expense = await prisma.expenses.create({
+      data: {
+        user_id: expenseUserId,
+        group_id: groupId || null,
+        category_id: categoryId,
+        amount,
+        description,
+        date: new Date(date),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true, expenseId: expense.id };
@@ -55,23 +55,24 @@ export async function updateExpense(expenseId: string, formData: FormData, userI
 
   try {
     // Verify ownership
-    const expense = await db.query.expenses.findFirst({
-      where: eq(expenses.id, expenseId),
+    const expense = await prisma.expenses.findUnique({
+      where: { id: expenseId },
     });
 
-    if (!expense || expense.userId !== userId) {
+    if (!expense || expense.user_id !== userId) {
       return { error: "Expense not found or unauthorized" };
     }
 
-    await db.update(expenses)
-      .set({
+    await prisma.expenses.update({
+      where: { id: expenseId },
+      data: {
         amount,
-        categoryId,
+        category_id: categoryId,
         description,
         date: new Date(date),
-        updatedAt: new Date(),
-      })
-      .where(eq(expenses.id, expenseId));
+        updated_at: new Date(),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -84,15 +85,17 @@ export async function updateExpense(expenseId: string, formData: FormData, userI
 export async function deleteExpense(expenseId: string, userId: string) {
   try {
     // Verify ownership
-    const expense = await db.query.expenses.findFirst({
-      where: eq(expenses.id, expenseId),
+    const expense = await prisma.expenses.findUnique({
+      where: { id: expenseId },
     });
 
-    if (!expense || expense.userId !== userId) {
+    if (!expense || expense.user_id !== userId) {
       return { error: "Expense not found or unauthorized" };
     }
 
-    await db.delete(expenses).where(eq(expenses.id, expenseId));
+    await prisma.expenses.delete({
+      where: { id: expenseId },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -109,62 +112,98 @@ export async function getExpenses(userId: string, params?: {
 }) {
   try {
     // Get all groups the user is a member of
-    const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, userId),
+    const userGroupMemberships = await prisma.group_members.findMany({
+      where: { user_id: userId },
+      select: { group_id: true },
     });
 
-    const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
+    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
 
-    // Build base condition: personal expenses OR shared expenses from user's groups
-    let baseCondition;
-    if (userGroupIds.length > 0) {
-      baseCondition = or(
-        // Personal expenses (no groupId, created by user)
-        and(
-          eq(expenses.userId, userId),
-          isNull(expenses.groupId)
-        ),
-        // Shared expenses (in any of user's groups)
-        inArray(expenses.groupId, userGroupIds)
-      );
-    } else {
-      // User has no groups, only show personal expenses
-      baseCondition = and(
-        eq(expenses.userId, userId),
-        isNull(expenses.groupId)
-      );
-    }
-
-    // Add additional filters
-    let additionalConditions = [];
+    // Build where condition
+    const whereCondition: any = {};
 
     if (params?.groupId) {
-      additionalConditions.push(eq(expenses.groupId, params.groupId));
+      // Filter by specific group
+      whereCondition.group_id = params.groupId;
+    } else {
+      // Get personal expenses OR shared expenses from user's groups
+      if (userGroupIds.length > 0) {
+        whereCondition.OR = [
+          // Personal expenses (no groupId, created by user)
+          { user_id: userId, group_id: null },
+          // Shared expenses (in any of user's groups)
+          { group_id: { in: userGroupIds } },
+        ];
+      } else {
+        // User has no groups, only show personal expenses
+        whereCondition.user_id = userId;
+        whereCondition.group_id = null;
+      }
     }
 
-    if (params?.startDate) {
-      additionalConditions.push(gte(expenses.date, params.startDate));
+    // Add date filters
+    if (params?.startDate || params?.endDate) {
+      whereCondition.date = {};
+      if (params.startDate) {
+        whereCondition.date.gte = params.startDate;
+      }
+      if (params.endDate) {
+        whereCondition.date.lte = params.endDate;
+      }
     }
 
-    if (params?.endDate) {
-      additionalConditions.push(lte(expenses.date, params.endDate));
-    }
-
-    const finalCondition = additionalConditions.length > 0
-      ? and(baseCondition, ...additionalConditions)
-      : baseCondition;
-
-    const userExpenses = await db.query.expenses.findMany({
-      where: finalCondition,
-      with: {
-        category: true,
-        group: true,
-        user: true,
+    const userExpenses = await prisma.expenses.findMany({
+      where: whereCondition,
+      include: {
+        categories: true,
+        groups: true,
+        users: true,
       },
-      orderBy: [desc(expenses.date)],
+      orderBy: { date: "desc" },
     });
 
-    return { success: true, expenses: userExpenses };
+    // Transform to match expected format
+    const expenses = userExpenses.map((expense) => ({
+      id: expense.id,
+      userId: expense.user_id,
+      groupId: expense.group_id,
+      categoryId: expense.category_id,
+      amount: expense.amount.toString(),
+      description: expense.description,
+      date: expense.date,
+      createdAt: expense.created_at,
+      updatedAt: expense.updated_at,
+      category: {
+        id: expense.categories.id,
+        userId: expense.categories.user_id,
+        groupId: expense.categories.group_id,
+        name: expense.categories.name,
+        color: expense.categories.color,
+        icon: expense.categories.icon,
+        createdAt: expense.categories.created_at,
+        updatedAt: expense.categories.updated_at,
+      },
+      group: expense.groups
+        ? {
+            id: expense.groups.id,
+            name: expense.groups.name,
+            createdBy: expense.groups.created_by,
+            createdAt: expense.groups.created_at,
+            updatedAt: expense.groups.updated_at,
+          }
+        : null,
+      user: {
+        id: expense.users.id,
+        email: expense.users.email,
+        name: expense.users.name,
+        avatarUrl: expense.users.avatar_url,
+        supabaseId: expense.users.supabase_id,
+        createdAt: expense.users.created_at,
+        updatedAt: expense.users.updated_at,
+      },
+    }));
+
+    return { success: true, expenses };
   } catch (error) {
     console.error("Error getting expenses:", error);
     return { error: "Failed to get expenses" };

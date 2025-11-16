@@ -90,20 +90,6 @@ export function CreateCategoryDialog({ groups = [], trigger }: CreateCategoryDia
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="type">Category Type</Label>
-              <Select value={type} onValueChange={(value: any) => setType(value)} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="saving">Saving</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
               <Label htmlFor="sharing">Sharing</Label>
               <Select value={groupId || "personal"} onValueChange={(value) => setGroupId(value === "personal" ? "" : value)} disabled={isLoading}>
                 <SelectTrigger>

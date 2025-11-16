@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { categories, groupMembers } from "@/lib/db/schema";
-import { eq, and, or, isNull, inArray } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
 
@@ -21,13 +19,15 @@ export async function createCategory(formData: FormData, userId: string) {
 
   try {
     // Create category
-    const [category] = await db.insert(categories).values({
-      name: name.trim(),
-      color: color || "#6366f1",
-      icon,
-      userId: groupId ? null : userId, // null if group category
-      groupId: groupId || null,
-    }).returning();
+    const category = await prisma.categories.create({
+      data: {
+        name: name.trim(),
+        color: color || "#6366f1",
+        icon,
+        user_id: groupId ? null : userId, // null if group category
+        group_id: groupId || null,
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true, categoryId: category.id };
@@ -40,38 +40,57 @@ export async function createCategory(formData: FormData, userId: string) {
 export async function getUserCategories(userId: string, groupId?: string) {
   try {
     // Get all groups the user is a member of
-    const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, userId),
+    const userGroupMemberships = await prisma.group_members.findMany({
+      where: { user_id: userId },
+      select: { group_id: true },
     });
 
-    const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
+    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
 
-    let whereCondition;
+    let userCategories;
 
     if (groupId) {
       // Get group categories only
-      whereCondition = eq(categories.groupId, groupId);
+      userCategories = await prisma.categories.findMany({
+        where: { group_id: groupId },
+        orderBy: { name: "asc" },
+      });
     } else {
       // Get personal categories and all shared categories from user's groups
       if (userGroupIds.length > 0) {
-        whereCondition = or(
-          // Personal categories (no groupId, created by user)
-          and(eq(categories.userId, userId), isNull(categories.groupId)),
-          // Shared categories (in any of user's groups)
-          inArray(categories.groupId, userGroupIds)
-        );
+        userCategories = await prisma.categories.findMany({
+          where: {
+            OR: [
+              // Personal categories (no groupId, created by user)
+              { user_id: userId, group_id: null },
+              // Shared categories (in any of user's groups)
+              { group_id: { in: userGroupIds } },
+            ],
+          },
+          orderBy: { name: "asc" },
+        });
       } else {
         // User has no groups, only show personal categories
-        whereCondition = and(eq(categories.userId, userId), isNull(categories.groupId));
+        userCategories = await prisma.categories.findMany({
+          where: { user_id: userId, group_id: null },
+          orderBy: { name: "asc" },
+        });
       }
     }
 
-    const userCategories = await db.query.categories.findMany({
-      where: whereCondition,
-      orderBy: (categories, { asc }) => [asc(categories.name)],
-    });
+    // Transform to match expected format
+    const categories = userCategories.map((category) => ({
+      id: category.id,
+      userId: category.user_id,
+      groupId: category.group_id,
+      name: category.name,
+      color: category.color,
+      icon: category.icon,
+      createdAt: category.created_at,
+      updatedAt: category.updated_at,
+    }));
 
-    return { success: true, categories: userCategories };
+    return { success: true, categories };
   } catch (error) {
     console.error("Error getting categories:", error);
     return { error: "Failed to get categories" };
@@ -88,8 +107,8 @@ export async function updateCategory(categoryId: string, formData: FormData, use
 
   try {
     // Verify ownership or group membership
-    const category = await db.query.categories.findFirst({
-      where: eq(categories.id, categoryId),
+    const category = await prisma.categories.findUnique({
+      where: { id: categoryId },
     });
 
     if (!category) {
@@ -97,16 +116,16 @@ export async function updateCategory(categoryId: string, formData: FormData, use
     }
 
     // Check if user has permission to edit
-    if (category.userId && category.userId !== userId) {
+    if (category.user_id && category.user_id !== userId) {
       return { error: "Unauthorized" };
     }
 
-    if (category.groupId) {
-      const membership = await db.query.groupMembers.findFirst({
-        where: and(
-          eq(groupMembers.groupId, category.groupId),
-          eq(groupMembers.userId, userId)
-        ),
+    if (category.group_id) {
+      const membership = await prisma.group_members.findFirst({
+        where: {
+          group_id: category.group_id,
+          user_id: userId,
+        },
       });
 
       if (!membership) {
@@ -114,13 +133,14 @@ export async function updateCategory(categoryId: string, formData: FormData, use
       }
     }
 
-    await db.update(categories)
-      .set({
+    await prisma.categories.update({
+      where: { id: categoryId },
+      data: {
         name: name.trim(),
         color,
-        updatedAt: new Date(),
-      })
-      .where(eq(categories.id, categoryId));
+        updated_at: new Date(),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -133,8 +153,8 @@ export async function updateCategory(categoryId: string, formData: FormData, use
 export async function deleteCategory(categoryId: string, userId: string) {
   try {
     // Check if user owns this category
-    const category = await db.query.categories.findFirst({
-      where: eq(categories.id, categoryId),
+    const category = await prisma.categories.findUnique({
+      where: { id: categoryId },
     });
 
     if (!category) {
@@ -142,17 +162,17 @@ export async function deleteCategory(categoryId: string, userId: string) {
     }
 
     // Check if user has permission to delete
-    if (category.userId && category.userId !== userId) {
+    if (category.user_id && category.user_id !== userId) {
       return { error: "You don't have permission to delete this category" };
     }
 
-    if (category.groupId) {
+    if (category.group_id) {
       // For group categories, verify user is in the group
-      const membership = await db.query.groupMembers.findFirst({
-        where: and(
-          eq(groupMembers.groupId, category.groupId),
-          eq(groupMembers.userId, userId)
-        ),
+      const membership = await prisma.group_members.findFirst({
+        where: {
+          group_id: category.group_id,
+          user_id: userId,
+        },
       });
 
       if (!membership) {
@@ -160,14 +180,16 @@ export async function deleteCategory(categoryId: string, userId: string) {
       }
     }
 
-    await db.delete(categories).where(eq(categories.id, categoryId));
+    await prisma.categories.delete({
+      where: { id: categoryId },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Error deleting category:", error);
     // Check if error is due to foreign key constraint
-    if (error instanceof Error && error.message.includes("restrict")) {
+    if (error instanceof Error && error.message.includes("foreign key constraint")) {
       return { error: "Cannot delete category that is being used" };
     }
     return { error: "Failed to delete category" };

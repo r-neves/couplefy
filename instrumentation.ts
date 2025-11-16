@@ -107,10 +107,6 @@ export async function register() {
         '@opentelemetry/instrumentation-http': {
           enabled: true,
         },
-        // pg instrumentation doesn't work with postgres-js, using custom debug hook instead
-        '@opentelemetry/instrumentation-pg': {
-          enabled: false,
-        },
       }),
     ],
   });

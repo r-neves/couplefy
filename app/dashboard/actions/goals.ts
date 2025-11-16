@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { goals, groupMembers } from "@/lib/db/schema";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
 
@@ -24,11 +22,11 @@ export async function createGoal(formData: FormData, userId: string) {
   try {
     // If groupId is provided, verify user is a member
     if (groupId) {
-      const membership = await db.query.groupMembers.findFirst({
-        where: and(
-          eq(groupMembers.groupId, groupId),
-          eq(groupMembers.userId, userId)
-        ),
+      const membership = await prisma.group_members.findFirst({
+        where: {
+          group_id: groupId,
+          user_id: userId,
+        },
       });
 
       if (!membership) {
@@ -36,15 +34,17 @@ export async function createGoal(formData: FormData, userId: string) {
       }
     }
 
-    const [goal] = await db.insert(goals).values({
-      userId: groupId ? null : userId, // Group goals don't have a userId
-      groupId: groupId || null,
-      name,
-      targetAmount,
-      color,
-      icon,
-      description,
-    }).returning();
+    const goal = await prisma.goals.create({
+      data: {
+        user_id: groupId ? null : userId, // Group goals don't have a userId
+        group_id: groupId || null,
+        name,
+        target_amount: targetAmount,
+        color,
+        icon,
+        description,
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true, goalId: goal.id };
@@ -67,8 +67,8 @@ export async function updateGoal(goalId: string, formData: FormData, userId: str
 
   try {
     // Verify ownership or group membership
-    const goal = await db.query.goals.findFirst({
-      where: eq(goals.id, goalId),
+    const goal = await prisma.goals.findUnique({
+      where: { id: goalId },
     });
 
     if (!goal) {
@@ -76,16 +76,16 @@ export async function updateGoal(goalId: string, formData: FormData, userId: str
     }
 
     // Check if user has permission to edit
-    if (goal.userId && goal.userId !== userId) {
+    if (goal.user_id && goal.user_id !== userId) {
       return { error: "Unauthorized" };
     }
 
-    if (goal.groupId) {
-      const membership = await db.query.groupMembers.findFirst({
-        where: and(
-          eq(groupMembers.groupId, goal.groupId),
-          eq(groupMembers.userId, userId)
-        ),
+    if (goal.group_id) {
+      const membership = await prisma.group_members.findFirst({
+        where: {
+          group_id: goal.group_id,
+          user_id: userId,
+        },
       });
 
       if (!membership) {
@@ -93,16 +93,17 @@ export async function updateGoal(goalId: string, formData: FormData, userId: str
       }
     }
 
-    await db.update(goals)
-      .set({
+    await prisma.goals.update({
+      where: { id: goalId },
+      data: {
         name,
-        targetAmount,
+        target_amount: targetAmount,
         color,
         icon,
         description,
-        updatedAt: new Date(),
-      })
-      .where(eq(goals.id, goalId));
+        updated_at: new Date(),
+      },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -115,8 +116,8 @@ export async function updateGoal(goalId: string, formData: FormData, userId: str
 export async function deleteGoal(goalId: string, userId: string) {
   try {
     // Verify ownership or group membership
-    const goal = await db.query.goals.findFirst({
-      where: eq(goals.id, goalId),
+    const goal = await prisma.goals.findUnique({
+      where: { id: goalId },
     });
 
     if (!goal) {
@@ -124,16 +125,16 @@ export async function deleteGoal(goalId: string, userId: string) {
     }
 
     // Check if user has permission to delete
-    if (goal.userId && goal.userId !== userId) {
+    if (goal.user_id && goal.user_id !== userId) {
       return { error: "Unauthorized" };
     }
 
-    if (goal.groupId) {
-      const membership = await db.query.groupMembers.findFirst({
-        where: and(
-          eq(groupMembers.groupId, goal.groupId),
-          eq(groupMembers.userId, userId)
-        ),
+    if (goal.group_id) {
+      const membership = await prisma.group_members.findFirst({
+        where: {
+          group_id: goal.group_id,
+          user_id: userId,
+        },
       });
 
       if (!membership) {
@@ -141,7 +142,9 @@ export async function deleteGoal(goalId: string, userId: string) {
       }
     }
 
-    await db.delete(goals).where(eq(goals.id, goalId));
+    await prisma.goals.delete({
+      where: { id: goalId },
+    });
 
     revalidatePath("/dashboard");
     return { success: true };
@@ -154,32 +157,51 @@ export async function deleteGoal(goalId: string, userId: string) {
 export async function getUserGoals(userId: string) {
   try {
     // Get all groups the user is a member of
-    const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, userId),
+    const userGroupMemberships = await prisma.group_members.findMany({
+      where: { user_id: userId },
+      select: { group_id: true },
     });
 
-    const userGroupIds = userGroupMemberships.map(gm => gm.groupId);
+    const userGroupIds = userGroupMemberships.map(gm => gm.group_id);
 
     // Get personal goals and goals from user's groups
-    let condition;
-    if (userGroupIds.length > 0) {
-      condition = or(
-        eq(goals.userId, userId),
-        inArray(goals.groupId, userGroupIds)
-      );
-    } else {
-      condition = eq(goals.userId, userId);
-    }
-
-    const userGoals = await db.query.goals.findMany({
-      where: condition,
-      with: {
-        group: true,
+    const userGoals = await prisma.goals.findMany({
+      where: {
+        OR: [
+          { user_id: userId },
+          { group_id: { in: userGroupIds } },
+        ],
       },
-      orderBy: (goals, { desc }) => [desc(goals.createdAt)],
+      include: {
+        groups: true,
+      },
+      orderBy: { created_at: "desc" },
     });
 
-    return { success: true, goals: userGoals };
+    // Transform to match expected format
+    const goals = userGoals.map((goal) => ({
+      id: goal.id,
+      userId: goal.user_id,
+      groupId: goal.group_id,
+      name: goal.name,
+      targetAmount: goal.target_amount?.toString() || null,
+      color: goal.color,
+      icon: goal.icon,
+      description: goal.description,
+      createdAt: goal.created_at,
+      updatedAt: goal.updated_at,
+      group: goal.groups
+        ? {
+            id: goal.groups.id,
+            name: goal.groups.name,
+            createdBy: goal.groups.created_by,
+            createdAt: goal.groups.created_at,
+            updatedAt: goal.groups.updated_at,
+          }
+        : null,
+    }));
+
+    return { success: true, goals };
   } catch (error) {
     console.error("Error getting goals:", error);
     return { error: "Failed to get goals" };

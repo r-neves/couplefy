@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -14,31 +12,33 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data?.user) {
-      // Sync user to our Drizzle database
+      // Sync user to our Prisma database
       try {
-        const existingUser = await db.query.users.findFirst({
-          where: eq(users.supabaseId, data.user.id),
+        const existingUser = await prisma.users.findUnique({
+          where: { supabase_id: data.user.id },
         });
 
         if (!existingUser) {
           // Create new user in our database
-          await db.insert(users).values({
-            supabaseId: data.user.id,
-            email: data.user.email!,
-            name: data.user.user_metadata?.full_name || data.user.email!.split("@")[0],
-            avatarUrl: data.user.user_metadata?.avatar_url || null,
+          await prisma.users.create({
+            data: {
+              supabase_id: data.user.id,
+              email: data.user.email!,
+              name: data.user.user_metadata?.full_name || data.user.email!.split("@")[0],
+              avatar_url: data.user.user_metadata?.avatar_url || null,
+            },
           });
         } else {
           // Update existing user
-          await db
-            .update(users)
-            .set({
+          await prisma.users.update({
+            where: { supabase_id: data.user.id },
+            data: {
               email: data.user.email!,
               name: data.user.user_metadata?.full_name || existingUser.name,
-              avatarUrl: data.user.user_metadata?.avatar_url || existingUser.avatarUrl,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.supabaseId, data.user.id));
+              avatar_url: data.user.user_metadata?.avatar_url || existingUser.avatar_url,
+              updated_at: new Date(),
+            },
+          });
         }
       } catch (dbError) {
         console.error("Error syncing user to database:", dbError);

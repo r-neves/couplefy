@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { groups, groupMembers, invites } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getDbUserId } from "@/lib/utils/user";
 
@@ -19,16 +17,17 @@ export async function createGroup(formData: FormData, userId: string) {
   }
 
   try {
-    // Create the group
-    const [group] = await db.insert(groups).values({
-      name: name.trim(),
-      createdBy: userId,
-    }).returning();
-
-    // Add creator as first member
-    await db.insert(groupMembers).values({
-      groupId: group.id,
-      userId: userId,
+    // Create the group and add creator as first member in a transaction
+    const group = await prisma.groups.create({
+      data: {
+        name: name.trim(),
+        created_by: userId,
+        group_members: {
+          create: {
+            user_id: userId,
+          },
+        },
+      },
     });
 
     revalidatePath("/dashboard");
@@ -42,11 +41,11 @@ export async function createGroup(formData: FormData, userId: string) {
 export async function generateInvite(groupId: string, userId: string) {
   try {
     // Verify user is a member of the group
-    const membership = await db.query.groupMembers.findFirst({
-      where: and(
-        eq(groupMembers.groupId, groupId),
-        eq(groupMembers.userId, userId)
-      ),
+    const membership = await prisma.group_members.findFirst({
+      where: {
+        group_id: groupId,
+        user_id: userId,
+      },
     });
 
     if (!membership) {
@@ -60,14 +59,16 @@ export async function generateInvite(groupId: string, userId: string) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const [invite] = await db.insert(invites).values({
-      groupId,
-      invitedBy: userId,
-      inviteCode,
-      expiresAt,
-    }).returning();
+    const invite = await prisma.invites.create({
+      data: {
+        group_id: groupId,
+        invited_by: userId,
+        invite_code: inviteCode,
+        expires_at: expiresAt,
+      },
+    });
 
-    return { success: true, inviteCode: invite.inviteCode };
+    return { success: true, inviteCode: invite.invite_code };
   } catch (error) {
     console.error("Error generating invite:", error);
     return { error: "Failed to generate invite" };
@@ -77,13 +78,13 @@ export async function generateInvite(groupId: string, userId: string) {
 export async function acceptInvite(inviteCode: string, userId: string) {
   try {
     // Find the invite
-    const invite = await db.query.invites.findFirst({
-      where: and(
-        eq(invites.inviteCode, inviteCode.toUpperCase()),
-        eq(invites.status, "pending")
-      ),
-      with: {
-        group: true,
+    const invite = await prisma.invites.findFirst({
+      where: {
+        invite_code: inviteCode.toUpperCase(),
+        status: "pending",
+      },
+      include: {
+        groups: true,
       },
     });
 
@@ -92,38 +93,42 @@ export async function acceptInvite(inviteCode: string, userId: string) {
     }
 
     // Check if invite is expired
-    if (new Date() > invite.expiresAt) {
-      await db.update(invites)
-        .set({ status: "expired" })
-        .where(eq(invites.id, invite.id));
+    if (new Date() > invite.expires_at) {
+      await prisma.invites.update({
+        where: { id: invite.id },
+        data: { status: "expired" },
+      });
       return { error: "This invite has expired" };
     }
 
     // Check if user is already a member
-    const existingMembership = await db.query.groupMembers.findFirst({
-      where: and(
-        eq(groupMembers.groupId, invite.groupId),
-        eq(groupMembers.userId, userId)
-      ),
+    const existingMembership = await prisma.group_members.findFirst({
+      where: {
+        group_id: invite.group_id,
+        user_id: userId,
+      },
     });
 
     if (existingMembership) {
       return { error: "You are already a member of this group" };
     }
 
-    // Add user to group
-    await db.insert(groupMembers).values({
-      groupId: invite.groupId,
-      userId: userId,
-    });
-
-    // Update invite status
-    await db.update(invites)
-      .set({ status: "accepted" })
-      .where(eq(invites.id, invite.id));
+    // Add user to group and update invite status in a transaction
+    await prisma.$transaction([
+      prisma.group_members.create({
+        data: {
+          group_id: invite.group_id,
+          user_id: userId,
+        },
+      }),
+      prisma.invites.update({
+        where: { id: invite.id },
+        data: { status: "accepted" },
+      }),
+    ]);
 
     revalidatePath("/dashboard");
-    return { success: true, groupName: invite.group.name };
+    return { success: true, groupName: invite.groups.name };
   } catch (error) {
     console.error("Error accepting invite:", error);
     return { error: "Failed to accept invite" };
@@ -133,14 +138,14 @@ export async function acceptInvite(inviteCode: string, userId: string) {
 export async function getUserGroups(userId: string) {
   try {
     // Get all groups the user is a member of
-    const userGroupMemberships = await db.query.groupMembers.findMany({
-      where: eq(groupMembers.userId, userId),
-      with: {
-        group: {
-          with: {
-            members: {
-              with: {
-                user: true,
+    const userGroupMemberships = await prisma.group_members.findMany({
+      where: { user_id: userId },
+      include: {
+        groups: {
+          include: {
+            group_members: {
+              include: {
+                users: true,
               },
             },
           },
@@ -148,9 +153,33 @@ export async function getUserGroups(userId: string) {
       },
     });
 
+    // Transform to match the expected format
+    const groups = userGroupMemberships.map((membership) => ({
+      id: membership.groups.id,
+      name: membership.groups.name,
+      createdBy: membership.groups.created_by,
+      createdAt: membership.groups.created_at,
+      updatedAt: membership.groups.updated_at,
+      members: membership.groups.group_members.map((member) => ({
+        id: member.id,
+        groupId: member.group_id,
+        userId: member.user_id,
+        joinedAt: member.joined_at,
+        user: {
+          id: member.users.id,
+          email: member.users.email,
+          name: member.users.name,
+          avatarUrl: member.users.avatar_url,
+          supabaseId: member.users.supabase_id,
+          createdAt: member.users.created_at,
+          updatedAt: member.users.updated_at,
+        },
+      })),
+    }));
+
     return {
       success: true,
-      groups: userGroupMemberships.map(m => m.group)
+      groups,
     };
   } catch (error) {
     console.error("Error getting user groups:", error);
