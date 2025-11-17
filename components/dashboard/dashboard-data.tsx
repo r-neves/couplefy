@@ -1,18 +1,18 @@
 import { DashboardStats } from "./dashboard-stats";
 import { QuickActions } from "./quick-actions";
 import { GettingStartedCard } from "./getting-started-card";
+import { GroupsManagement } from "./groups-management";
 import { getExpenses } from "@/app/dashboard/actions/expenses";
 import { getSavings } from "@/app/dashboard/actions/savings";
 import { getUserCategories } from "@/app/dashboard/actions/categories";
 import { getUserGoals } from "@/app/dashboard/actions/goals";
+import { getUserGroups } from "@/app/dashboard/actions/groups";
 
 interface DashboardDataProps {
   userId: string;
   currentUserId: string;
   startOfMonth: Date;
   endOfMonth: Date;
-  userGroupIds: string[];
-  userGroups: any[];
 }
 
 export async function DashboardData({
@@ -20,17 +20,17 @@ export async function DashboardData({
   currentUserId,
   startOfMonth,
   endOfMonth,
-  userGroupIds,
-  userGroups,
 }: DashboardDataProps) {
   // Fetch all data in parallel - this happens only once
-  const [expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
-    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds }),
-    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds }),
-    getUserCategories(userId, undefined, userGroupIds),
-    getUserGoals(userId, userGroupIds),
+  const [groupsResult, expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
+    getUserGroups(userId),
+    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth }),
+    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth }),
+    getUserCategories(userId),
+    getUserGoals(userId),
   ]);
 
+  const userGroups = groupsResult.success ? groupsResult.groups : [];
   const expenses = expensesResult.success ? expensesResult.expenses : [];
   const savingsData = savingsResult.success ? savingsResult.savings : [];
   const categories = categoriesResult.success ? categoriesResult.categories : [];
@@ -68,6 +68,9 @@ export async function DashboardData({
           goals={goals}
         />
       </div>
+
+      {/* Groups Management */}
+      <GroupsManagement userGroups={userGroups} />
     </>
   );
 }
