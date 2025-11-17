@@ -21,16 +21,20 @@ export async function DashboardData({
   startOfMonth,
   endOfMonth,
 }: DashboardDataProps) {
+  // Fetch user's groups first to extract IDs for other queries
+  // This is the only blocking query - everything else streams in
+  const groupsResult = await getUserGroups(userId);
+  const userGroups = groupsResult.success ? groupsResult.groups : [];
+  const userGroupIds = userGroups.map((g) => g.id);
+
   // Fetch all data in parallel - this happens only once
-  const [groupsResult, expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
-    getUserGroups(userId),
-    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth }),
-    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth }),
-    getUserCategories(userId),
-    getUserGoals(userId),
+  const [expensesResult, savingsResult, categoriesResult, goalsResult] = await Promise.all([
+    getExpenses(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds: userGroupIds }),
+    getSavings(userId, { startDate: startOfMonth, endDate: endOfMonth, userGroupIds: userGroupIds }),
+    getUserCategories(userId, undefined, userGroupIds),
+    getUserGoals(userId, userGroupIds),
   ]);
 
-  const userGroups = groupsResult.success ? groupsResult.groups : [];
   const expenses = expensesResult.success ? expensesResult.expenses : [];
   const savingsData = savingsResult.success ? savingsResult.savings : [];
   const categories = categoriesResult.success ? categoriesResult.categories : [];
