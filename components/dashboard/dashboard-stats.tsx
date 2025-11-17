@@ -30,7 +30,7 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
     <div className="grid gap-4 md:grid-cols-2">
       {/* Total Expenses Card - Clickable */}
       <Link href="/dashboard/expenses">
-        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-100 dark:border-pink-900/20 hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50 hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses (This Month)</CardTitle>
             <Receipt className="h-4 w-4 text-pink-600 dark:text-pink-400" />
@@ -55,7 +55,7 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
 
       {/* Total Savings Card - Clickable */}
       <Link href="/dashboard/savings">
-        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-100 dark:border-purple-900/20 hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50 hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Savings (This Month)</CardTitle>
             <PiggyBank className="h-4 w-4 text-purple-600 dark:text-purple-400" />

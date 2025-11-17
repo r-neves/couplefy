@@ -187,9 +187,9 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Card className="mb-8">
+        <Card className="mb-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
           <CardHeader>
-            <CardTitle>Expenses Overview</CardTitle>
+            <CardTitle className="text-pink-900 dark:text-pink-100">Expenses Overview</CardTitle>
             <CardDescription>This month</CardDescription>
           </CardHeader>
           <CardContent>
@@ -230,9 +230,9 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
         {/* Visualizations */}
         {expenses.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card>
+            <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
               <CardHeader>
-                <CardTitle>Category Breakdown</CardTitle>
+                <CardTitle className="text-pink-900 dark:text-pink-100">Category Breakdown</CardTitle>
                 <CardDescription>
                   Spending by category this month
                 </CardDescription>
@@ -242,9 +242,9 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
               <CardHeader>
-                <CardTitle>Expense Distribution</CardTitle>
+                <CardTitle className="text-pink-900 dark:text-pink-100">Expense Distribution</CardTitle>
                 <CardDescription>
                   Personal and group expenses
                 </CardDescription>
@@ -269,11 +269,11 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
         {groupAnalytics.map(analytics => (
           analytics.totalExpenses > 0 && (
             <div key={analytics.group.id} className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">{analytics.group.name} - Group Expenses</h2>
+              <h2 className="text-xl font-semibold mb-4 text-indigo-900 dark:text-indigo-100">{analytics.group.name} - Group Expenses</h2>
               <div className="grid gap-6 md:grid-cols-2 mb-4">
-                <Card>
+                <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-indigo-200 dark:border-indigo-800/50">
                   <CardHeader>
-                    <CardTitle>Category Breakdown</CardTitle>
+                    <CardTitle className="text-indigo-900 dark:text-indigo-100">Category Breakdown</CardTitle>
                     <CardDescription>
                       Spending by category for {analytics.group.name}
                     </CardDescription>
@@ -283,9 +283,9 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-indigo-200 dark:border-indigo-800/50">
                   <CardHeader>
-                    <CardTitle>Spending by Person</CardTitle>
+                    <CardTitle className="text-indigo-900 dark:text-indigo-100">Spending by Person</CardTitle>
                     <CardDescription>
                       How much each person spent in {analytics.group.name}
                     </CardDescription>
@@ -299,11 +299,11 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
           )
         ))}
 
-        <Card>
+        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Expenses List</CardTitle>
+                <CardTitle className="text-pink-900 dark:text-pink-100">Expenses List</CardTitle>
                 <CardDescription>
                   {isAllTime ? "All transactions" : "All transactions for this month"}
                 </CardDescription>
@@ -329,9 +329,9 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
         {/* Setup Instructions */}
         {categories.length === 0 && (
-          <Card className="mt-8">
+          <Card className="mt-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
             <CardHeader>
-              <CardTitle>Get Started</CardTitle>
+              <CardTitle className="text-pink-900 dark:text-pink-100">Get Started</CardTitle>
               <CardDescription>Set up categories to track your expenses</CardDescription>
             </CardHeader>
             <CardContent>

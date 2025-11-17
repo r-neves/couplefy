@@ -26,9 +26,9 @@ export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
 
   if (goalsWithTargets.length === 0) {
     return (
-      <Card>
+      <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
         <CardHeader>
-          <CardTitle>Goal Progress</CardTitle>
+          <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
           <CardDescription>Track progress toward your savings goals</CardDescription>
         </CardHeader>
         <CardContent>
@@ -41,9 +41,9 @@ export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
   }
 
   return (
-    <Card>
+    <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
       <CardHeader>
-        <CardTitle>Goal Progress</CardTitle>
+        <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
         <CardDescription>Progress toward your savings goals</CardDescription>
       </CardHeader>
       <CardContent>

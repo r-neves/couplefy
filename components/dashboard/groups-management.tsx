@@ -10,7 +10,7 @@ interface GroupsManagementProps {
 
 export function GroupsManagement({ userGroups }: GroupsManagementProps) {
   return (
-    <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:shadow-lg transition-shadow border-indigo-100 dark:border-indigo-900/20">
+    <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:shadow-lg transition-shadow border-indigo-200 dark:border-indigo-800/50">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -24,7 +24,7 @@ export function GroupsManagement({ userGroups }: GroupsManagementProps) {
             {userGroups.map(group => (
               <div
                 key={group.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/30"
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800/50"
               >
                 <span className="text-sm font-medium text-indigo-900 dark:text-indigo-100">{group.name}</span>
                 <InviteDialog

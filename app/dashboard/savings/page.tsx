@@ -147,13 +147,13 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
       <main className="container mx-auto px-4 py-8">
         {/* Total and Progress */}
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card>
+          <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
             <CardHeader>
-              <CardTitle>Total Saved This Month</CardTitle>
+              <CardTitle className="text-purple-900 dark:text-purple-100">Total Saved This Month</CardTitle>
               <CardDescription>All goals combined</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold"><CurrencyDisplay amount={totalSavings} /></div>
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400"><CurrencyDisplay amount={totalSavings} /></div>
               <p className="text-sm text-muted-foreground mt-2">
                 {savings.length} transaction{savings.length !== 1 ? 's' : ''}
               </p>
@@ -166,9 +166,9 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
         {/* Visualizations */}
         {savings.length > 0 && (
           <div className="mb-8">
-            <Card>
+            <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
               <CardHeader>
-                <CardTitle>Savings by Goal</CardTitle>
+                <CardTitle className="text-purple-900 dark:text-purple-100">Savings by Goal</CardTitle>
                 <CardDescription>
                   Breakdown for this month
                 </CardDescription>
@@ -180,11 +180,11 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
           </div>
         )}
 
-        <Card>
+        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Savings</CardTitle>
+                <CardTitle className="text-purple-900 dark:text-purple-100">Recent Savings</CardTitle>
                 <CardDescription>
                   {isAllTime ? "All transactions" : "All transactions for this month"}
                 </CardDescription>
@@ -211,9 +211,9 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
 
         {/* Setup Instructions */}
         {goals.length === 0 && (
-          <Card className="mt-8">
+          <Card className="mt-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
             <CardHeader>
-              <CardTitle>Get Started</CardTitle>
+              <CardTitle className="text-purple-900 dark:text-purple-100">Get Started</CardTitle>
               <CardDescription>Set up goals to track your savings</CardDescription>
             </CardHeader>
             <CardContent>
