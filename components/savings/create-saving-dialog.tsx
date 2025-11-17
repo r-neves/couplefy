@@ -137,11 +137,14 @@ export function CreateSavingDialog({ goals, groups, groupsWithMembers, currentUs
               Add Saving
             </Button>
           ) : (
-            <Button className="w-full justify-start gap-3 h-auto py-3 px-4" variant="outline">
-              <PiggyBank className="h-5 w-5 flex-shrink-0" />
+            <Button
+              className="w-full justify-start gap-3 h-auto py-4 px-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-900/30 hover:shadow-md hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900/40 dark:hover:to-purple-800/40 transition-all"
+              variant="outline"
+            >
+              <PiggyBank className="h-5 w-5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
               <div className="text-left">
-                <div className="font-semibold text-sm">Add Saving</div>
-                <div className="text-xs text-muted-foreground">Record a saving</div>
+                <div className="font-semibold text-sm text-purple-900 dark:text-purple-100">Add Saving</div>
+                <div className="text-xs text-purple-700 dark:text-purple-300">Record a saving</div>
               </div>
             </Button>
           )
