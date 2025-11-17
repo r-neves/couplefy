@@ -1,14 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { AcceptInviteDialog } from "@/components/groups/accept-invite-dialog";
-import { InviteDialog } from "@/components/groups/invite-dialog";
+import { ManageGroupDialog } from "@/components/groups/manage-group-dialog";
 import { Users } from "lucide-react";
 
 interface GroupsManagementProps {
   userGroups: any[];
+  currentUserId: string;
 }
 
-export function GroupsManagement({ userGroups }: GroupsManagementProps) {
+export function GroupsManagement({ userGroups, currentUserId }: GroupsManagementProps) {
   return (
     <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:shadow-lg transition-shadow border-indigo-200 dark:border-indigo-800/50">
       <CardHeader>
@@ -27,9 +28,12 @@ export function GroupsManagement({ userGroups }: GroupsManagementProps) {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800/50"
               >
                 <span className="text-sm font-medium text-indigo-900 dark:text-indigo-100">{group.name}</span>
-                <InviteDialog
+                <ManageGroupDialog
                   groupId={group.id}
                   groupName={group.name}
+                  members={group.members}
+                  currentUserId={currentUserId}
+                  createdBy={group.createdBy}
                 />
               </div>
             ))}

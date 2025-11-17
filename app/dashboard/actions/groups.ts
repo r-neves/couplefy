@@ -237,3 +237,125 @@ export async function acceptInviteFromClient(inviteCode: string) {
 
   return acceptInvite(inviteCode, userId);
 }
+
+export async function updateGroupName(groupId: string, newName: string, userId: string) {
+  if (!newName || newName.trim().length === 0) {
+    return { error: "Group name is required" };
+  }
+
+  try {
+    // Verify user is a member of the group
+    const membership = await prisma.group_members.findFirst({
+      where: {
+        group_id: groupId,
+        user_id: userId,
+      },
+    });
+
+    if (!membership) {
+      return { error: "You are not a member of this group" };
+    }
+
+    // Update group name
+    await prisma.groups.update({
+      where: { id: groupId },
+      data: { name: newName.trim() },
+    });
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating group name:", error);
+    return { error: "Failed to update group name" };
+  }
+}
+
+export async function updateGroupNameFromClient(groupId: string, newName: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return updateGroupName(groupId, newName, userId);
+}
+
+export async function removeMemberFromGroup(groupId: string, memberUserId: string, requestingUserId: string) {
+  try {
+    // Verify requesting user is a member of the group
+    const requestingMembership = await prisma.group_members.findFirst({
+      where: {
+        group_id: groupId,
+        user_id: requestingUserId,
+      },
+    });
+
+    if (!requestingMembership) {
+      return { error: "You are not a member of this group" };
+    }
+
+    // Get group info to check if the member being removed is the creator
+    const group = await prisma.groups.findUnique({
+      where: { id: groupId },
+      include: {
+        group_members: true,
+      },
+    });
+
+    if (!group) {
+      return { error: "Group not found" };
+    }
+
+    // Don't allow removing the creator if there are other members
+    if (group.created_by === memberUserId && group.group_members.length > 1) {
+      return { error: "Cannot remove the group creator while other members exist" };
+    }
+
+    // Remove the member
+    await prisma.group_members.deleteMany({
+      where: {
+        group_id: groupId,
+        user_id: memberUserId,
+      },
+    });
+
+    // If the last member was removed, delete the group
+    const remainingMembers = await prisma.group_members.count({
+      where: { group_id: groupId },
+    });
+
+    if (remainingMembers === 0) {
+      await prisma.groups.delete({
+        where: { id: groupId },
+      });
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error removing member from group:", error);
+    return { error: "Failed to remove member" };
+  }
+}
+
+export async function removeMemberFromGroupFromClient(groupId: string, memberUserId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = await getDbUserId(user.id);
+  if (!userId) {
+    return { error: "User not found in database" };
+  }
+
+  return removeMemberFromGroup(groupId, memberUserId, userId);
+}

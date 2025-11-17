@@ -74,7 +74,7 @@ export async function DashboardData({
       </div>
 
       {/* Groups Management */}
-      <GroupsManagement userGroups={userGroups} />
+      <GroupsManagement userGroups={userGroups} currentUserId={currentUserId} />
     </>
   );
 }
