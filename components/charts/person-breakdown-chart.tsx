@@ -140,7 +140,7 @@ export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
   };
 
   return (
-    <div className="h-64">
+    <div className="h-64 w-full max-w-full overflow-hidden">
       <Bar data={chartData} options={options} />
     </div>
   );

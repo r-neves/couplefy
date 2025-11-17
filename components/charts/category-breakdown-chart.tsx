@@ -107,7 +107,7 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
   };
 
   return (
-    <div className="h-[300px]">
+    <div className="h-[300px] w-full max-w-full overflow-hidden">
       <Doughnut data={chartData} options={options} />
     </div>
   );

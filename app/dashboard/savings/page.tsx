@@ -132,9 +132,6 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
             <div className="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
               <SettingsDialog />
-              <ManageGoalsDialog goals={goals} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
-              <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Goal</Button>} />
-              <CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
             </div>
           </div>
           <div className="flex justify-center">
@@ -145,6 +142,16 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Add Saving Button - Prominent at top */}
+        <div className="mb-6">
+          <CreateSavingDialog
+            goals={goals}
+            groups={groups}
+            groupsWithMembers={groupsWithMembers}
+            currentUserId={userId}
+          />
+        </div>
+
         {/* Total and Progress */}
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
@@ -160,7 +167,11 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
             </CardContent>
           </Card>
 
-          <GoalProgressCard goalsWithProgress={goalProgress} />
+          <GoalProgressCard
+            goalsWithProgress={goalProgress}
+            manageButton={<ManageGoalsDialog goals={goals} groups={groups} trigger={<Button variant="outline" size="sm">Manage</Button>} />}
+            createButton={<CreateGoalDialog groups={groups} trigger={<Button variant="outline" size="sm">+ New</Button>} />}
+          />
         </div>
 
         {/* Visualizations */}
@@ -182,21 +193,10 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
 
         <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-purple-900 dark:text-purple-100">Recent Savings</CardTitle>
-                <CardDescription>
-                  {isAllTime ? "All transactions" : "All transactions for this month"}
-                </CardDescription>
-              </div>
-              <CreateSavingDialog
-                goals={goals}
-                groups={groups}
-                groupsWithMembers={groupsWithMembers}
-                currentUserId={userId}
-                simple
-              />
-            </div>
+            <CardTitle className="text-purple-900 dark:text-purple-100">Recent Savings</CardTitle>
+            <CardDescription>
+              {isAllTime ? "All transactions" : "All transactions for this month"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <SavingsList
@@ -217,11 +217,11 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
               <CardDescription>Set up goals to track your savings</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-4">
                 You need to create savings goals before you can track your savings.
                 Goals help you organize your savings and track progress toward targets.
-                Click the "+ Goal" button in the header to create your first goal.
               </p>
+              <CreateGoalDialog groups={groups} trigger={<Button>+ Create Goal</Button>} />
             </CardContent>
           </Card>
         )}

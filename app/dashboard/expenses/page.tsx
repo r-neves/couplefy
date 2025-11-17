@@ -174,9 +174,6 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
             <div className="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
               <SettingsDialog />
-              <ManageCategoriesDialog categories={categories} groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">Manage</Button>} />
-              <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="hidden sm:inline-flex">+ Category</Button>} />
-              <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm" className="sm:hidden">+</Button>} />
             </div>
           </div>
           <div className="flex justify-center">
@@ -187,6 +184,16 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Add Expense Button - Prominent at top */}
+        <div className="mb-6">
+          <CreateExpenseDialog
+            categories={categories}
+            groups={groups}
+            groupsWithMembers={groupsWithMembers}
+            currentUserId={userId}
+          />
+        </div>
+
         <Card className="mb-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
           <CardHeader>
             <CardTitle className="text-pink-900 dark:text-pink-100">Expenses Overview</CardTitle>
@@ -232,10 +239,18 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
           <div className="grid gap-6 md:grid-cols-2 mb-8">
             <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
               <CardHeader>
-                <CardTitle className="text-pink-900 dark:text-pink-100">Category Breakdown</CardTitle>
-                <CardDescription>
-                  Spending by category this month
-                </CardDescription>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-pink-900 dark:text-pink-100">Category Breakdown</CardTitle>
+                    <CardDescription>
+                      Spending by category this month
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <ManageCategoriesDialog categories={categories} groups={groups} trigger={<Button variant="outline" size="sm">Manage</Button>} />
+                    <CreateCategoryDialog groups={groups} trigger={<Button variant="outline" size="sm">+ New</Button>} />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <CategoryBreakdownChart data={categoryData} />
@@ -301,20 +316,10 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
         <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-pink-900 dark:text-pink-100">Expenses List</CardTitle>
-                <CardDescription>
-                  {isAllTime ? "All transactions" : "All transactions for this month"}
-                </CardDescription>
-              </div>
-              <CreateExpenseDialog
-                categories={categories}
-                groups={groups}
-                groupsWithMembers={groupsWithMembers}
-                currentUserId={userId}
-              />
-            </div>
+            <CardTitle className="text-pink-900 dark:text-pink-100">Expenses List</CardTitle>
+            <CardDescription>
+              {isAllTime ? "All transactions" : "All transactions for this month"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ExpensesList
@@ -335,11 +340,11 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
               <CardDescription>Set up categories to track your expenses</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-4">
                 You need to create expense categories before you can track your spending.
                 Categories help organize your expenses and make it easier to see where your money goes.
-                Click the "+ Category" button in the header to create your first category.
               </p>
+              <CreateCategoryDialog groups={groups} trigger={<Button>+ Create Category</Button>} />
             </CardContent>
           </Card>
         )}

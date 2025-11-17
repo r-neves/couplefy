@@ -16,7 +16,11 @@ import { Label } from "@/components/ui/label";
 import { createGroupFromClient } from "@/app/dashboard/actions/groups";
 import { useRouter } from "next/navigation";
 
-export function CreateGroupDialog() {
+interface CreateGroupDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function CreateGroupDialog({ trigger }: CreateGroupDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +47,7 @@ export function CreateGroupDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Group</Button>
+        {trigger || <Button>Create Group</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

@@ -33,7 +33,7 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
         <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50 hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses (This Month)</CardTitle>
-            <Receipt className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+            <Receipt className="h-5 w-5 text-pink-600 dark:text-pink-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
@@ -58,7 +58,7 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
         <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50 hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Savings (This Month)</CardTitle>
-            <PiggyBank className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <PiggyBank className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">

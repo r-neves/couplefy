@@ -16,7 +16,11 @@ import { Label } from "@/components/ui/label";
 import { acceptInviteFromClient } from "@/app/dashboard/actions/groups";
 import { useRouter } from "next/navigation";
 
-export function AcceptInviteDialog() {
+interface AcceptInviteDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function AcceptInviteDialog({ trigger }: AcceptInviteDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +48,7 @@ export function AcceptInviteDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Join Group</Button>
+        {trigger || <Button variant="outline">Join Group</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

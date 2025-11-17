@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { AcceptInviteDialog } from "@/components/groups/accept-invite-dialog";
 import { ManageGroupDialog } from "@/components/groups/manage-group-dialog";
@@ -13,11 +14,19 @@ export function GroupsManagement({ userGroups, currentUserId }: GroupsManagement
   return (
     <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:shadow-lg transition-shadow border-indigo-200 dark:border-indigo-800/50">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-          Groups
-        </CardTitle>
-        <CardDescription>Manage your shared groups</CardDescription>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div>
+              <CardTitle className="text-lg">Groups</CardTitle>
+              <CardDescription>Manage your shared groups</CardDescription>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <AcceptInviteDialog trigger={<Button variant="outline" size="sm">Join</Button>} />
+            <CreateGroupDialog trigger={<Button variant="outline" size="sm">+ New</Button>} />
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {userGroups.length > 0 ? (
@@ -37,18 +46,11 @@ export function GroupsManagement({ userGroups, currentUserId }: GroupsManagement
                 />
               </div>
             ))}
-            <CreateGroupDialog />
           </div>
         ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Create a group or join one with an invite code
-            </p>
-            <div className="flex gap-2">
-              <CreateGroupDialog />
-              <AcceptInviteDialog />
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No groups yet. Create a group or join one with an invite code using the buttons above.
+          </p>
         )}
       </CardContent>
     </Card>

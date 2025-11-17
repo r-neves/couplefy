@@ -18,9 +18,11 @@ interface GoalProgressData {
 
 interface GoalProgressCardProps {
   goalsWithProgress: GoalProgressData[];
+  manageButton?: React.ReactNode;
+  createButton?: React.ReactNode;
 }
 
-export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
+export function GoalProgressCard({ goalsWithProgress, manageButton, createButton }: GoalProgressCardProps) {
   // Only show goals with target amounts
   const goalsWithTargets = goalsWithProgress.filter(g => g.goal.targetAmount);
 
@@ -28,8 +30,18 @@ export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
     return (
       <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
         <CardHeader>
-          <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
-          <CardDescription>Track progress toward your savings goals</CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
+              <CardDescription>Track progress toward your savings goals</CardDescription>
+            </div>
+            {(manageButton || createButton) && (
+              <div className="flex gap-2 flex-shrink-0">
+                {manageButton}
+                {createButton}
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-4">
@@ -43,8 +55,18 @@ export function GoalProgressCard({ goalsWithProgress }: GoalProgressCardProps) {
   return (
     <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-purple-200 dark:border-purple-800/50">
       <CardHeader>
-        <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
-        <CardDescription>Progress toward your savings goals</CardDescription>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-purple-900 dark:text-purple-100">Goal Progress</CardTitle>
+            <CardDescription>Progress toward your savings goals</CardDescription>
+          </div>
+          {(manageButton || createButton) && (
+            <div className="flex gap-2 flex-shrink-0">
+              {manageButton}
+              {createButton}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">

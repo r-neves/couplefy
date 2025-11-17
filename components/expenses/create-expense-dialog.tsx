@@ -140,7 +140,7 @@ export function CreateExpenseDialog({ categories, groups, groupsWithMembers, cur
               className="w-full justify-start gap-3 h-auto py-4 px-4 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/30 dark:to-pink-900/30 border-pink-200 dark:border-pink-900/30 hover:shadow-md hover:from-pink-100 hover:to-pink-200 dark:hover:from-pink-900/40 dark:hover:to-pink-800/40 transition-all"
               variant="outline"
             >
-              <Receipt className="h-5 w-5 flex-shrink-0 text-pink-600 dark:text-pink-400" />
+              <Receipt className="h-6 w-6 flex-shrink-0 text-pink-600 dark:text-pink-400" />
               <div className="text-left">
                 <div className="font-semibold text-sm text-pink-900 dark:text-pink-100">Add Expense</div>
                 <div className="text-xs text-pink-700 dark:text-pink-300">Record a spending</div>
