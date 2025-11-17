@@ -23,21 +23,15 @@ const getDatabaseUrl = () => {
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
-    datasourceUrl: getDatabaseUrl(),
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
+      },
+    },
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
-    // Optimize for serverless/edge environments
-    ...(process.env.NODE_ENV === "production" && {
-      // Reduce connection pool size for serverless (Vercel/serverless functions)
-      // Each function instance gets its own connection pool
-      datasources: {
-        db: {
-          url: getDatabaseUrl(),
-        },
-      },
-    }),
   });
 };
 
