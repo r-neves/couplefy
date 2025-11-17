@@ -8,6 +8,11 @@ import { DashboardData } from "@/components/dashboard/dashboard-data";
 import { DashboardStatsSkeleton } from "@/components/dashboard/dashboard-skeleton";
 
 export default async function DashboardPage() {
+  // Start warming up the database connection in parallel with Supabase auth
+  const { warmupPrismaConnection } = await import("@/lib/prisma");
+  const warmupPromise = warmupPrismaConnection();
+
+  // Get user from Supabase (runs in parallel with DB warmup)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -15,7 +20,10 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  // Get current user's DB ID
+  // Wait for DB warmup to complete before querying
+  await warmupPromise;
+
+  // Get current user's DB ID (connection should already be warm)
   const { getDbUserId } = await import("@/lib/utils/user");
   const userId = await getDbUserId(user.id);
 

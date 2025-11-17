@@ -38,3 +38,18 @@ const prismaClientSingleton = () => {
 export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+/**
+ * Warm up the database connection pool
+ * This can be called in parallel with other operations to reduce latency
+ * Returns a promise that resolves when the connection is established
+ */
+export async function warmupPrismaConnection(): Promise<void> {
+  try {
+    // Execute a lightweight query to establish connection
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (error) {
+    // Log error but don't throw - connection will be retried on next query
+    console.error("Failed to warm up Prisma connection:", error);
+  }
+}

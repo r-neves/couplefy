@@ -22,6 +22,11 @@ interface SavingsPageProps {
 }
 
 export default async function SavingsPage({ searchParams }: SavingsPageProps) {
+  // Start warming up the database connection in parallel with Supabase auth
+  const { warmupPrismaConnection } = await import("@/lib/prisma");
+  const warmupPromise = warmupPrismaConnection();
+
+  // Get user from Supabase (runs in parallel with DB warmup)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -36,7 +41,10 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
   const year = isAllTime ? now.getFullYear() : (params.year ? parseInt(params.year) : now.getFullYear());
   const month = isAllTime ? now.getMonth() + 1 : (params.month ? parseInt(params.month) : now.getMonth() + 1);
 
-  // Get current user's DB ID first
+  // Wait for DB warmup to complete before querying
+  await warmupPromise;
+
+  // Get current user's DB ID (connection should already be warm)
   const { getDbUserId } = await import("@/lib/utils/user");
   const userId = await getDbUserId(user.id);
 
