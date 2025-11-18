@@ -10,9 +10,7 @@ import { CreateExpenseDialog } from "@/components/expenses/create-expense-dialog
 import { CreateCategoryDialog } from "@/components/categories/create-category-dialog";
 import { ManageCategoriesDialog } from "@/components/categories/manage-categories-dialog";
 import { ExpensesList } from "@/components/expenses/expenses-list";
-import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
-import { ExpenseComparisonChart } from "@/components/charts/expense-comparison-chart";
-import { PersonBreakdownChart } from "@/components/charts/person-breakdown-chart";
+import { CategoryBreakdownChart, PersonBreakdownChart } from "@/components/charts/chart-loader";
 import { MonthSelector } from "@/components/filters/month-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsDialog } from "@/components/settings/settings-dialog";

@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from 'next/font/google';
 import "./globals.css";
 import { PWALifecycle } from "@/components/pwa/pwa-lifecycle";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SpeedInsights } from '@vercel/speed-insights/next';
+
+// Configure Inter font with display swap for faster FCP
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+});
 
 export const metadata: Metadata = {
   title: "Couplefy - Manage Your Life Together",
@@ -30,12 +40,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -10,7 +10,7 @@ import { CreateSavingDialog } from "@/components/savings/create-saving-dialog";
 import { CreateGoalDialog } from "@/components/goals/create-goal-dialog";
 import { ManageGoalsDialog } from "@/components/goals/manage-goals-dialog";
 import { SavingsList } from "@/components/savings/savings-list";
-import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
+import { CategoryBreakdownChart } from "@/components/charts/chart-loader";
 import { GoalProgressCard } from "@/components/goals/goal-progress-card";
 import { MonthSelector } from "@/components/filters/month-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
