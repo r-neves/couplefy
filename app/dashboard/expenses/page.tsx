@@ -61,21 +61,21 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
     isAllTime
       ? getExpenses(userId, { userGroupIds })
       : getExpenses(userId, {
-          startDate: new Date(year, month - 1, 1),
-          endDate: new Date(year, month, 0),
-          userGroupIds,
-        }),
+        startDate: new Date(year, month - 1, 1),
+        endDate: new Date(year, month, 0),
+        userGroupIds,
+      }),
     getUserCategories(userId, undefined, userGroupIds),
   ]);
 
   const expenses = expensesResult.success ? expensesResult.expenses : [];
   const categories = categoriesResult.success
     ? categoriesResult.categories.map(c => ({
-        id: c.id,
-        name: c.name,
-        color: c.color || "#6366f1",
-        groupId: c.groupId,
-      }))
+      id: c.id,
+      name: c.name,
+      color: c.color || "#6366f1",
+      groupId: c.groupId,
+    }))
     : [];
 
   const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
@@ -200,49 +200,49 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
           />
         </div>
 
-        <Card className="mb-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
-          <CardHeader>
-            <CardTitle className="text-pink-900 dark:text-pink-100">Expenses Overview</CardTitle>
-            <CardDescription>This month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Personal</span>
-                <div className="text-right">
-                  <div className="font-semibold"><CurrencyDisplay amount={personalTotal} /></div>
-                  <div className="text-xs text-muted-foreground">
-                    {personalExpenses.length} transaction{personalExpenses.length !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              </div>
-              {groupExpenseTotals.map(group => (
-                <div key={group.groupId} className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">{group.groupName}</span>
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
+          <Card className="mb-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
+            <CardHeader>
+              <CardTitle className="text-pink-900 dark:text-pink-100">Expenses Overview</CardTitle>
+              <CardDescription>This month</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Personal</span>
                   <div className="text-right">
-                    <div className="font-semibold"><CurrencyDisplay amount={group.total} /></div>
+                    <div className="font-semibold"><CurrencyDisplay amount={personalTotal} /></div>
                     <div className="text-xs text-muted-foreground">
-                      {group.count} transaction{group.count !== 1 ? 's' : ''}
+                      {personalExpenses.length} transaction{personalExpenses.length !== 1 ? 's' : ''}
                     </div>
                   </div>
                 </div>
-              ))}
-              <div className="pt-3 border-t flex justify-between items-center">
-                <span className="font-medium">Total</span>
-                <div className="text-right">
-                  <div className="text-2xl font-bold"><CurrencyDisplay amount={totalExpenses} /></div>
-                  <div className="text-sm text-muted-foreground">
-                    {totalTransactionCount} transaction{totalTransactionCount !== 1 ? 's' : ''}
+                {groupExpenseTotals.map(group => (
+                  <div key={group.groupId} className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{group.groupName}</span>
+                    <div className="text-right">
+                      <div className="font-semibold"><CurrencyDisplay amount={group.total} /></div>
+                      <div className="text-xs text-muted-foreground">
+                        {group.count} transaction{group.count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-3 border-t flex justify-between items-center">
+                  <span className="font-medium">Total</span>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold"><CurrencyDisplay amount={totalExpenses} /></div>
+                    <div className="text-sm text-muted-foreground">
+                      {totalTransactionCount} transaction{totalTransactionCount !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Visualizations */}
-        {expenses.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2 mb-8">
+
+          {expenses.length > 0 && (
             <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
@@ -262,29 +262,8 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                 <CategoryBreakdownChart data={categoryData} />
               </CardContent>
             </Card>
-
-            <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
-              <CardHeader>
-                <CardTitle className="text-pink-900 dark:text-pink-100">Expense Distribution</CardTitle>
-                <CardDescription>
-                  Personal and group expenses
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CategoryBreakdownChart 
-                  data={[
-                    { name: "Personal", total: personalTotal, color: "#6366f1" },
-                    ...groupExpenseTotals.map((g, i) => ({
-                      name: g.groupName,
-                      total: g.total,
-                      color: ["#ec4899", "#8b5cf6", "#10b981", "#f59e0b"][i % 4],
-                    })),
-                  ].filter(d => d.total > 0)}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Group-specific Analytics */}
         {groupAnalytics.map(analytics => (
