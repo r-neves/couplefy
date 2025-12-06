@@ -49,6 +49,7 @@ export async function updateExpense(expenseId: string, formData: FormData, userI
   const categoryId = formData.get("categoryId") as string;
   const description = formData.get("description") as string || null;
   const date = formData.get("date") as string;
+  const paidById = formData.get("paidById") as string || null;
 
   if (!amount || !categoryId || !date) {
     return { error: "Amount, category, and date are required" };
@@ -67,6 +68,7 @@ export async function updateExpense(expenseId: string, formData: FormData, userI
     await prisma.expenses.update({
       where: { id: expenseId },
       data: {
+        user_id: paidById || expense.user_id,
         amount,
         category_id: categoryId,
         description,
