@@ -59,6 +59,7 @@ export async function DashboardData({
           expenses={expenses}
           savingsData={savingsData}
           userGroups={userGroups}
+          userId={userId}
         />
       </div>
 

@@ -50,58 +50,54 @@ export function MonthSelector({ currentPath }: MonthSelectorProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={handlePreviousMonth}
-        disabled={isAllTime}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium min-w-[120px] text-center">
-          {isAllTime ? "All Time" : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+    <div className="flex flex-col sm:flex-row items-center gap-4">
+      {/* Navigation - Only visible in Monthly mode */}
+      <div className={`flex items-center gap-2 ${isAllTime ? "opacity-50 pointer-events-none grayscale" : ""}`}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handlePreviousMonth}
+          disabled={isAllTime}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <span className="text-sm font-medium min-w-[140px] text-center">
+          {isAllTime 
+            ? "All Time" // Placeholder text to maintain width
+            : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          }
         </span>
-        {isAllTime ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCurrentMonth}
-          >
-            Monthly
-          </Button>
-        ) : (
-          <>
-            {!isCurrentMonth() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCurrentMonth}
-              >
-                Today
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleAllTime}
-            >
-              All Time
-            </Button>
-          </>
-        )}
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleNextMonth}
+          disabled={isAllTime || isCurrentMonth()}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={handleNextMonth}
-        disabled={isAllTime || isCurrentMonth()}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+      {/* Mode Selector */}
+      <div className="flex items-center p-1 bg-muted rounded-lg border">
+        <Button
+          variant={!isAllTime ? "secondary" : "ghost"}
+          size="sm"
+          onClick={handleCurrentMonth}
+          className={`px-4 ${!isAllTime ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"}`}
+        >
+          Monthly
+        </Button>
+        <Button
+          variant={isAllTime ? "secondary" : "ghost"}
+          size="sm"
+          onClick={handleAllTime}
+          className={`px-4 ${isAllTime ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"}`}
+        >
+          All Time
+        </Button>
+      </div>
     </div>
   );
 }

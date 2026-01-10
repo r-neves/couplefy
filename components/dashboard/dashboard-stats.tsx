@@ -9,21 +9,28 @@ interface DashboardStatsProps {
   userGroups: any[];
 }
 
-export function DashboardStats({ expenses, savingsData, userGroups }: DashboardStatsProps) {
+export function DashboardStats({ expenses, savingsData, userGroups, userId }: DashboardStatsProps & { userId: string }) {
 
   // Calculate totals
   const personalExpenses = expenses.filter(e => !e.groupId);
   const personalExpensesTotal = personalExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-  const groupExpenseTotals = userGroups.map(group => ({
-    groupId: group.id,
-    groupName: group.name,
-    total: expenses
-      .filter(e => e.groupId === group.id)
-      .reduce((sum, e) => sum + parseFloat(e.amount), 0),
-  }));
+  const groupExpenseTotals = userGroups.map(group => {
+    const groupExpenses = expenses.filter(e => e.groupId === group.id);
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      userTotal: groupExpenses
+        .filter(e => e.userId === userId)
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+      groupTotal: groupExpenses
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+    };
+  });
 
-  const totalExpenses = personalExpensesTotal + groupExpenseTotals.reduce((sum, g) => sum + g.total, 0);
+  const totalUserExpenses = personalExpensesTotal + groupExpenseTotals.reduce((sum, g) => sum + g.userTotal, 0);
+  const totalGlobalExpenses = personalExpensesTotal + groupExpenseTotals.reduce((sum, g) => sum + g.groupTotal, 0);
+  
   const totalSavings = savingsData.reduce((sum, s) => sum + parseFloat(s.amount), 0);
 
   return (
@@ -37,7 +44,12 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-              <CurrencyDisplay amount={totalExpenses} />
+              <CurrencyDisplay amount={totalUserExpenses} />
+              {totalGlobalExpenses !== totalUserExpenses && (
+                 <span className="text-sm text-muted-foreground font-normal ml-2">
+                   (<CurrencyDisplay amount={totalGlobalExpenses} />)
+                 </span>
+              )}
             </div>
             <div className="mt-2 space-y-1">
               <p className="text-xs text-muted-foreground">
@@ -45,7 +57,10 @@ export function DashboardStats({ expenses, savingsData, userGroups }: DashboardS
               </p>
               {groupExpenseTotals.map(group => (
                 <p key={group.groupId} className="text-xs text-muted-foreground">
-                  {group.groupName}: <CurrencyDisplay amount={group.total} className="font-medium" />
+                  {group.groupName}: <CurrencyDisplay amount={group.userTotal} className="font-medium" />
+                  {group.groupTotal !== group.userTotal && (
+                    <span className="opacity-75"> (<CurrencyDisplay amount={group.groupTotal} />)</span>
+                  )}
                 </p>
               ))}
             </div>

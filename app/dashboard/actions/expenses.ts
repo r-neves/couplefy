@@ -61,7 +61,16 @@ export async function updateExpense(expenseId: string, formData: FormData, userI
       where: { id: expenseId },
     });
 
-    if (!expense || expense.user_id !== userId) {
+
+    if (!expense) {
+      return { error: "Expense not found or unauthorized" };
+    }
+
+    const userGroupIds = await getUserGroupIds(userId);
+    const isOwner = expense.user_id === userId;
+    const isGroupMember = expense.group_id && userGroupIds.includes(expense.group_id);
+
+    if (!isOwner && !isGroupMember) {
       return { error: "Expense not found or unauthorized" };
     }
 
@@ -158,7 +167,7 @@ export async function getExpenses(userId: string, params?: {
         groups: true,
         users: true,
       },
-      orderBy: { date: "desc" },
+      orderBy: [{ date: "desc" }, { created_at: "desc" }],
     });
 
     // Transform to match expected format

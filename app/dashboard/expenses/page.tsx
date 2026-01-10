@@ -86,16 +86,22 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const personalTotal = personalExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
   // Calculate group-specific expenses
-  const groupExpenseTotals = groupsWithMembers.map(group => ({
-    groupId: group.id,
-    groupName: group.name,
-    total: expenses
-      .filter(e => e.groupId === group.id)
-      .reduce((sum, e) => sum + parseFloat(e.amount), 0),
-    count: expenses.filter(e => e.groupId === group.id).length,
-  }));
+  const groupExpenseTotals = groupsWithMembers.map(group => {
+    const groupExpenses = expenses.filter(e => e.groupId === group.id);
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      userTotal: groupExpenses
+        .filter(e => e.userId === userId)
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+      groupTotal: groupExpenses
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0),
+      count: groupExpenses.length,
+    };
+  });
 
-  const totalExpenses = personalTotal + groupExpenseTotals.reduce((sum, g) => sum + g.total, 0);
+  const totalUserExpenses = personalTotal + groupExpenseTotals.reduce((sum, g) => sum + g.userTotal, 0);
+  const totalGlobalExpenses = personalTotal + groupExpenseTotals.reduce((sum, g) => sum + g.groupTotal, 0);
   const totalTransactionCount = personalExpenses.length + groupExpenseTotals.reduce((sum, g) => sum + g.count, 0);
 
   // Calculate category breakdown
@@ -221,7 +227,14 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                   <div key={group.groupId} className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">{group.groupName}</span>
                     <div className="text-right">
-                      <div className="font-semibold"><CurrencyDisplay amount={group.total} /></div>
+                      <div className="font-semibold flex items-center justify-end gap-1">
+                        <CurrencyDisplay amount={group.userTotal} />
+                        {group.groupTotal !== group.userTotal && (
+                          <span className="text-xs font-normal text-muted-foreground opacity-75">
+                            (<CurrencyDisplay amount={group.groupTotal} />)
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {group.count} transaction{group.count !== 1 ? 's' : ''}
                       </div>
@@ -231,7 +244,14 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
                 <div className="pt-3 border-t flex justify-between items-center">
                   <span className="font-medium">Total</span>
                   <div className="text-right">
-                    <div className="text-2xl font-bold"><CurrencyDisplay amount={totalExpenses} /></div>
+                    <div className="text-2xl font-bold flex items-center justify-end gap-2">
+                       <CurrencyDisplay amount={totalUserExpenses} />
+                       {totalGlobalExpenses !== totalUserExpenses && (
+                         <span className="text-sm text-muted-foreground font-normal">
+                           (<CurrencyDisplay amount={totalGlobalExpenses} />)
+                         </span>
+                       )}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {totalTransactionCount} transaction{totalTransactionCount !== 1 ? 's' : ''}
                     </div>
