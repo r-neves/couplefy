@@ -105,7 +105,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const totalTransactionCount = personalExpenses.length + groupExpenseTotals.reduce((sum, g) => sum + g.count, 0);
 
   // Calculate category breakdown
-  const categoryBreakdown = expenses.reduce((acc, expense) => {
+  const categoryBreakdown = personalExpenses.reduce((acc, expense) => {
     const categoryId = expense.category.id;
     const categoryName = expense.category.name;
     const categoryColor = expense.category.color || "#6366f1";
@@ -262,14 +262,14 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
           </Card>
 
 
-          {expenses.length > 0 && (
+          {personalExpenses.length > 0 && (
             <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <CardTitle className="text-pink-900 dark:text-pink-100">Category Breakdown</CardTitle>
+                    <CardTitle className="text-pink-900 dark:text-pink-100">Personal Category Breakdown</CardTitle>
                     <CardDescription>
-                      Spending by category this month
+                      Personal spending by category this month
                     </CardDescription>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
