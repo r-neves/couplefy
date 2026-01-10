@@ -112,6 +112,8 @@ model users {
   supabase_id   String          @unique(map: "users_supabase_id_unique") @db.VarChar(255)
   created_at    DateTime        @default(now()) @db.Timestamp(6)
   updated_at    DateTime        @default(now()) @db.Timestamp(6)
+  role          user_role       @default(USER)
+  status        access_status   @default(PENDING)
   categories    categories[]
   expenses      expenses[]
   goals         goals[]
@@ -126,4 +128,15 @@ enum invite_status {
   accepted
   rejected
   expired
+}
+
+enum user_role {
+  USER
+  ADMIN
+}
+
+enum access_status {
+  PENDING
+  APPROVED
+  REJECTED
 }

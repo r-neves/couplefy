@@ -6,6 +6,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { DashboardData } from "@/components/dashboard/dashboard-data";
 import { DashboardStatsSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ShieldIcon } from "lucide-react";
 
 export default async function DashboardPage() {
   // Start warming up the database connection in parallel with Supabase auth
@@ -24,12 +27,14 @@ export default async function DashboardPage() {
   await warmupPromise;
 
   // Get current user's DB ID (connection should already be warm)
-  const { getDbUserId } = await import("@/lib/utils/user");
-  const userId = await getDbUserId(user.id);
+  const { getDbUserWithStatus } = await import("@/lib/utils/user");
+  const dbUser = await getDbUserWithStatus(user.id);
 
-  if (!userId) {
+  if (!dbUser) {
     redirect("/");
   }
+
+  const userId = dbUser.id;
 
   // Get current month's dates
   const now = new Date();
@@ -46,10 +51,18 @@ export default async function DashboardPage() {
               Couplefy
             </h1>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <ThemeToggle />
               <div className="text-sm text-muted-foreground hidden sm:block truncate max-w-[150px] md:max-w-none">
                 {user.email}
               </div>
-              <ThemeToggle />
+              {dbUser.role === "ADMIN" && (
+                <Link href="/dashboard/admin">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ShieldIcon className="h-4 w-4" />
+                    Admin
+                  </Button>
+                </Link>
+              )}
               <SettingsDialog />
               <SignOutButton />
             </div>
