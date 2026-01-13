@@ -174,7 +174,7 @@ export async function createSavedItem(data: {names: Record<string, string>, cate
   try {
     await prisma.saved_items.create({
       data: {
-        names: data.names as Prisma.JsonObject,
+        names: data.names as unknown as any,
         category_id: data.categoryId,
         user_id: data.groupId ? null : userId,
         group_id: data.groupId || null,
@@ -219,7 +219,7 @@ export async function updateSavedItem(itemId: string, data: {names: Record<strin
     await prisma.saved_items.update({
       where: { id: itemId },
       data: {
-        names: data.names as Prisma.JsonObject,
+        names: data.names as unknown as any,
         category_id: data.categoryId,
       },
     });
