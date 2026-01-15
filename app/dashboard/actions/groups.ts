@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 
 function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -191,51 +190,24 @@ export async function getUserGroups(userId: string) {
 // These are used by client components that can't pass userId directly
 
 export async function createGroupFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return createGroup(formData, userId);
+  return createGroup(formData, auth.userId);
 }
 
 export async function generateInviteFromClient(groupId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return generateInvite(groupId, userId);
+  return generateInvite(groupId, auth.userId);
 }
 
 export async function acceptInviteFromClient(inviteCode: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return acceptInvite(inviteCode, userId);
+  return acceptInvite(inviteCode, auth.userId);
 }
 
 export async function updateGroupName(groupId: string, newName: string, userId: string) {
@@ -271,19 +243,10 @@ export async function updateGroupName(groupId: string, newName: string, userId: 
 }
 
 export async function updateGroupNameFromClient(groupId: string, newName: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return updateGroupName(groupId, newName, userId);
+  return updateGroupName(groupId, newName, auth.userId);
 }
 
 export async function removeMemberFromGroup(groupId: string, memberUserId: string, requestingUserId: string) {
@@ -345,17 +308,8 @@ export async function removeMemberFromGroup(groupId: string, memberUserId: strin
 }
 
 export async function removeMemberFromGroupFromClient(groupId: string, memberUserId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return removeMemberFromGroup(groupId, memberUserId, userId);
+  return removeMemberFromGroup(groupId, memberUserId, auth.userId);
 }

@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
@@ -195,65 +194,29 @@ export async function deleteCategory(categoryId: string, userId: string) {
 // Client-facing wrapper functions that fetch userId automatically
 
 export async function createCategoryFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return createCategory(formData, userId);
+  return createCategory(formData, auth.userId);
 }
 
 export async function getUserCategoriesFromClient(groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return getUserCategories(userId, groupId);
+  return getUserCategories(auth.userId, groupId);
 }
 
 export async function updateCategoryFromClient(categoryId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return updateCategory(categoryId, formData, userId);
+  return updateCategory(categoryId, formData, auth.userId);
 }
 
 export async function deleteCategoryFromClient(categoryId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return deleteCategory(categoryId, userId);
+  return deleteCategory(categoryId, auth.userId);
 }

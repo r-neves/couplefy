@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 import { Prisma } from "@prisma/client";
 
@@ -274,91 +273,64 @@ export async function deleteSavedItem(itemId: string, userId: string) {
 // --- Client Wrappers ---
 
 export async function createShoppingListItemFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return createShoppingListItem(formData, userId);
+  return createShoppingListItem(formData, auth.userId);
 }
 
 export async function getShoppingListItemsFromClient(groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return getShoppingListItems(userId, groupId);
+  return getShoppingListItems(auth.userId, groupId);
 }
 
 export async function toggleShoppingItemFromClient(itemId: string, completed: boolean) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return updateShoppingListItem(itemId, { completed }, userId);
+  return updateShoppingListItem(itemId, { completed }, auth.userId);
 }
 
 export async function deleteShoppingItemFromClient(itemId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return deleteShoppingListItem(itemId, userId);
+  return deleteShoppingListItem(itemId, auth.userId);
 }
 
 export async function clearShoppingListFromClient(groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return clearShoppingList(userId, groupId);
+  return clearShoppingList(auth.userId, groupId);
 }
 
 export async function getSavedItemsFromClient(groupId?: string) {
-   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
   
-  return getSavedItems(userId, groupId);
+  return getSavedItems(auth.userId, groupId);
 }
 
 export async function createSavedItemFromClient(names: Record<string, string>, categoryId: string, groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return createSavedItem({ names, categoryId, groupId }, userId);
+  return createSavedItem({ names, categoryId, groupId }, auth.userId);
 }
 
 export async function updateSavedItemFromClient(itemId: string, names: Record<string, string>, categoryId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return updateSavedItem(itemId, { names, categoryId }, userId);
+  return updateSavedItem(itemId, { names, categoryId }, auth.userId);
 }
 
 export async function deleteSavedItemFromClient(itemId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  return deleteSavedItem(itemId, userId);
+  return deleteSavedItem(itemId, auth.userId);
 }

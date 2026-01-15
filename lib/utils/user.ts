@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Get the database user ID from a Supabase user ID
@@ -30,4 +31,21 @@ export async function getDbUserWithStatus(supabaseUserId: string) {
   });
 
   return dbUser;
+}
+
+/**
+ * Get the authenticated user's database ID
+ * Returns error object if not authenticated or user not found in database
+ * This is a common pattern used in server actions
+ */
+export async function getAuthenticatedUserId(): Promise<{ userId: string } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return { error: "Not authenticated" };
+  
+  const userId = await getDbUserId(user.id);
+  if (!userId) return { error: "User not found" };
+  
+  return { userId };
 }

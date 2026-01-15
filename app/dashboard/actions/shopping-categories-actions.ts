@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions usually accept userId directly so they can be reused internally
@@ -200,56 +199,36 @@ export async function updateCategoryOrder(categoryIds: string[], userId: string)
 // Client wrappers
 
 export async function createShoppingCategoryFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
-
-  return createShoppingCategory(formData, userId);
+  return createShoppingCategory(formData, auth.userId);
 }
 
 export async function getShoppingCategoriesFromClient(groupId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
-
-  return getShoppingCategories(userId, groupId);
+  return getShoppingCategories(auth.userId, groupId);
 }
 
 export async function updateShoppingCategoryFromClient(categoryId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
-
-  return updateShoppingCategory(categoryId, formData, userId);
+  return updateShoppingCategory(categoryId, formData, auth.userId);
 }
 
 export async function deleteShoppingCategoryFromClient(categoryId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
-
-  return deleteShoppingCategory(categoryId, userId);
+  return deleteShoppingCategory(categoryId, auth.userId);
 }
 
 export async function updateCategoryOrderFromClient(categoryIds: string[]) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) return { error: "Not authenticated" };
-  const userId = await getDbUserId(user.id);
-  if (!userId) return { error: "User not found" };
-
-  return updateCategoryOrder(categoryIds, userId);
+  return updateCategoryOrder(categoryIds, auth.userId);
 }

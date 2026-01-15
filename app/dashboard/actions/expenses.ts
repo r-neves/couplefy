@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
@@ -221,51 +220,24 @@ export async function getExpenses(userId: string, params?: {
 // Client-facing wrapper functions that fetch userId automatically
 
 export async function createExpenseFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return createExpense(formData, userId);
+  return createExpense(formData, auth.userId);
 }
 
 export async function updateExpenseFromClient(expenseId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return updateExpense(expenseId, formData, userId);
+  return updateExpense(expenseId, formData, auth.userId);
 }
 
 export async function deleteExpenseFromClient(expenseId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return deleteExpense(expenseId, userId);
+  return deleteExpense(expenseId, auth.userId);
 }
 
 export async function getExpensesFromClient(params?: {
@@ -273,17 +245,8 @@ export async function getExpensesFromClient(params?: {
   startDate?: Date;
   endDate?: Date;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return getExpenses(userId, params);
+  return getExpenses(auth.userId, params);
 }

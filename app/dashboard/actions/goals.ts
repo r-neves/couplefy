@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
@@ -207,65 +206,29 @@ export async function getUserGoals(userId: string, userGroupIds?: string[]) {
 // Client-facing wrapper functions that fetch userId automatically
 
 export async function createGoalFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return createGoal(formData, userId);
+  return createGoal(formData, auth.userId);
 }
 
 export async function updateGoalFromClient(goalId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return updateGoal(goalId, formData, userId);
+  return updateGoal(goalId, formData, auth.userId);
 }
 
 export async function deleteGoalFromClient(goalId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return deleteGoal(goalId, userId);
+  return deleteGoal(goalId, auth.userId);
 }
 
 export async function getUserGoalsFromClient() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return getUserGoals(userId);
+  return getUserGoals(auth.userId);
 }

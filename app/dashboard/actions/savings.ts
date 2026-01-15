@@ -1,9 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getDbUserId } from "@/lib/utils/user";
+import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
 
 // Core functions that accept userId directly
@@ -212,51 +211,24 @@ export async function getSavings(userId: string, params?: {
 // Client-facing wrapper functions that fetch userId automatically
 
 export async function createSavingFromClient(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return createSaving(formData, userId);
+  return createSaving(formData, auth.userId);
 }
 
 export async function updateSavingFromClient(savingId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return updateSaving(savingId, formData, userId);
+  return updateSaving(savingId, formData, auth.userId);
 }
 
 export async function deleteSavingFromClient(savingId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return deleteSaving(savingId, userId);
+  return deleteSaving(savingId, auth.userId);
 }
 
 export async function getSavingsFromClient(params?: {
@@ -264,17 +236,8 @@ export async function getSavingsFromClient(params?: {
   startDate?: Date;
   endDate?: Date;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await getAuthenticatedUserId();
+  if ('error' in auth) return auth;
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const userId = await getDbUserId(user.id);
-  if (!userId) {
-    return { error: "User not found in database" };
-  }
-
-  return getSavings(userId, params);
+  return getSavings(auth.userId, params);
 }
