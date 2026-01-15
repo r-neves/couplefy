@@ -51,10 +51,10 @@ export function ManageCategoriesDialog({ categories, groups, trigger }: ManageCa
     const formData = new FormData(e.currentTarget);
     const result = await updateCategoryFromClient(editingCategory.id, formData);
 
-    if (result.success) {
-      setEditingCategory(null);
-    } else {
+    if ('error' in result) {
       alert(result.error);
+    } else {
+      setEditingCategory(null);
     }
     setIsSubmitting(false);
   }
@@ -63,10 +63,10 @@ export function ManageCategoriesDialog({ categories, groups, trigger }: ManageCa
     if (!deletingCategoryId) return;
 
     const result = await deleteCategoryFromClient(deletingCategoryId);
-    if (result.success) {
-      setDeletingCategoryId(null);
-    } else {
+    if ('error' in result) {
       alert(result.error);
+    } else {
+      setDeletingCategoryId(null);
     }
   }
 

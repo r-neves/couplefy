@@ -52,10 +52,10 @@ export function ManageGoalsDialog({ goals, groups, trigger }: ManageGoalsDialogP
     const formData = new FormData(e.currentTarget);
     const result = await updateGoalFromClient(editingGoal.id, formData);
 
-    if (result.success) {
-      setEditingGoal(null);
-    } else {
+    if ('error' in result) {
       alert(result.error);
+    } else {
+      setEditingGoal(null);
     }
     setIsSubmitting(false);
   }
@@ -64,10 +64,10 @@ export function ManageGoalsDialog({ goals, groups, trigger }: ManageGoalsDialogP
     if (!deletingGoalId) return;
 
     const result = await deleteGoalFromClient(deletingGoalId);
-    if (result.success) {
-      setDeletingGoalId(null);
-    } else {
+    if ('error' in result) {
       alert(result.error);
+    } else {
+      setDeletingGoalId(null);
     }
   }
 

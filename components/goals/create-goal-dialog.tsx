@@ -35,12 +35,12 @@ export function CreateGoalDialog({ groups, trigger }: CreateGoalDialogProps) {
 
     const result = await createGoalFromClient(formData);
 
-    if (result.success) {
+    if ('error' in result) {
+      alert(result.error);
+    } else {
       setOpen(false);
       setGroupId("personal");
       e.currentTarget.reset();
-    } else {
-      alert(result.error);
     }
 
     setIsSubmitting(false);
