@@ -46,7 +46,7 @@ export async function getShoppingCategories(userId: string, groupId?: string) {
     if (groupId) {
       items = await prisma.shopping_categories.findMany({
         where: { group_id: groupId },
-        orderBy: { name: "asc" },
+        orderBy: { display_order: "asc" },
       });
     } else {
       items = await prisma.shopping_categories.findMany({
@@ -56,7 +56,7 @@ export async function getShoppingCategories(userId: string, groupId?: string) {
             { group_id: { in: groupIds } },
           ],
         },
-        orderBy: { name: "asc" },
+        orderBy: { display_order: "asc" },
       });
     }
 
@@ -67,6 +67,7 @@ export async function getShoppingCategories(userId: string, groupId?: string) {
       name: cat.name,
       color: cat.color,
       icon: cat.icon,
+      displayOrder: cat.display_order,
     }));
 
     return { success: true, categories };
@@ -167,6 +168,35 @@ export async function deleteShoppingCategory(categoryId: string, userId: string)
   }
 }
 
+export async function updateCategoryOrder(categoryIds: string[], userId: string) {
+  try {
+    // Get user's group IDs first
+    const groupIds = await getUserGroupIds(userId);
+    
+    // Update each category with its new display_order
+    const updates = categoryIds.map((categoryId, index) =>
+      prisma.shopping_categories.updateMany({
+        where: {
+          id: categoryId,
+          OR: [
+            { user_id: userId },
+            { group_id: { in: groupIds } }
+          ]
+        },
+        data: { display_order: index }
+      })
+    );
+
+    await Promise.all(updates);
+
+    revalidatePath("/dashboard/shopping-list");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating category order:", error);
+    return { error: "Failed to update category order" };
+  }
+}
+
 // Client wrappers
 
 export async function createShoppingCategoryFromClient(formData: FormData) {
@@ -211,4 +241,15 @@ export async function deleteShoppingCategoryFromClient(categoryId: string) {
   if (!userId) return { error: "User not found" };
 
   return deleteShoppingCategory(categoryId, userId);
+}
+
+export async function updateCategoryOrderFromClient(categoryIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+  const userId = await getDbUserId(user.id);
+  if (!userId) return { error: "User not found" };
+
+  return updateCategoryOrder(categoryIds, userId);
 }

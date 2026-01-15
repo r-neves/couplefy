@@ -13,6 +13,14 @@ interface QuickSearchBarProps {
   disabled?: boolean;
 }
 
+// Helper function to normalize text by removing accents/diacritics
+const normalizeText = (text: string): string => {
+  return text
+    .normalize('NFD') // Normalize to decomposed form (separates base characters from diacritics)
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+    .toLowerCase();
+};
+
 export function QuickSearchBar({
   savedItems,
   categories,
@@ -38,11 +46,11 @@ export function QuickSearchBar({
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return [];
 
-    const query = searchQuery.toLowerCase();
+    const normalizedQuery = normalizeText(searchQuery);
     return savedItems.filter(item => {
       const namesObj = item.names as Record<string, string>;
       return Object.values(namesObj).some(name =>
-        name.toLowerCase().includes(query)
+        normalizeText(name).includes(normalizedQuery)
       );
     }).map(item => {
       const namesObj = item.names as Record<string, string>;

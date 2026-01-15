@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,10 +20,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Settings, Plus, Trash2, Edit2 } from "lucide-react";
+import { Settings, Plus, Trash2, Edit2, GripVertical } from "lucide-react";
 import { CreateShoppingCategoryDialog } from "./create-shopping-category-dialog";
 import { EditShoppingCategoryDialog } from "./edit-shopping-category-dialog";
-import { deleteShoppingCategoryFromClient } from "@/app/dashboard/actions/shopping-categories-actions";
+import { deleteShoppingCategoryFromClient, updateCategoryOrderFromClient } from "@/app/dashboard/actions/shopping-categories-actions";
 import { useRouter } from "next/navigation";
 
 interface ManageShoppingCategoriesProps {
@@ -37,13 +37,57 @@ export function ManageShoppingCategories({ categories, userId, groupId }: Manage
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [localCategories, setLocalCategories] = useState(categories);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const router = useRouter();
+
+  // Sync local state when categories prop changes
+  useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
 
   const handleDelete = async () => {
     if (!deletingCategoryId) return;
 
     await deleteShoppingCategoryFromClient(deletingCategoryId);
     setDeletingCategoryId(null);
+    router.refresh();
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newCategories = [...localCategories];
+    const draggedItem = newCategories[draggedIndex];
+    
+    // Remove from old position
+    newCategories.splice(draggedIndex, 1);
+    // Insert at new position
+    newCategories.splice(index, 0, draggedItem);
+    
+    setLocalCategories(newCategories);
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragEnd = async () => {
+    if (draggedIndex === null) return;
+    
+    // Save the new order
+    const categoryIds = localCategories.map(cat => cat.id);
+    await updateCategoryOrderFromClient(categoryIds);
+    
+    setDraggedIndex(null);
     router.refresh();
   };
 
@@ -61,7 +105,7 @@ export function ManageShoppingCategories({ categories, userId, groupId }: Manage
           <DialogHeader>
             <DialogTitle>Shopping Categories</DialogTitle>
             <DialogDescription>
-              Manage categories for your {groupId ? "group" : "personal"} shopping list
+              Manage categories for your {groupId ? "group" : "personal"} shopping list. Drag to reorder.
             </DialogDescription>
           </DialogHeader>
 
@@ -76,17 +120,23 @@ export function ManageShoppingCategories({ categories, userId, groupId }: Manage
             </Button>
 
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {categories.length === 0 ? (
+              {localCategories.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No categories yet. Create one to get started!
                 </div>
               ) : (
-                categories.map((category) => (
+                localCategories.map((category, index) => (
                   <div
                     key={category.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnter={(e) => handleDragEnter(e, index)}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card cursor-move hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
+                      <GripVertical className="h-5 w-5 text-muted-foreground" />
                       {category.icon ? (
                         <span className="text-xl">{category.icon}</span>
                       ) : (

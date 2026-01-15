@@ -86,8 +86,13 @@ export function ShoppingListView({ items, categories, onToggleItem, onDeleteItem
           const visibleItems = showCompleted 
             ? categoryItems 
             : categoryItems.filter((i: any) => !i.completed);
+          
+          // Sort items alphabetically by name
+          const sortedItems = [...visibleItems].sort((a, b) => 
+            a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+          );
             
-          if (visibleItems.length === 0) return null;
+          if (sortedItems.length === 0) return null;
 
           const isCollapsed = collapsedCategories.has(category.id);
 
@@ -112,12 +117,12 @@ export function ShoppingListView({ items, categories, onToggleItem, onDeleteItem
                 )}
                 <h3 className="font-semibold text-lg">{category.name}</h3>
                 <span className="text-sm text-muted-foreground ml-auto">
-                  {visibleItems.length} {visibleItems.length === 1 ? 'item' : 'items'}
+                  {sortedItems.length} {sortedItems.length === 1 ? 'item' : 'items'}
                 </span>
               </button>
               {!isCollapsed && (
                 <div className="space-y-2">
-                  {visibleItems.map((item: any) => (
+                  {sortedItems.map((item: any) => (
                     <ItemRow
                       key={item.id}
                       item={item}
