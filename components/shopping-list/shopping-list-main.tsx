@@ -47,7 +47,27 @@ export function ShoppingListMain({
   initialGroupData,
   initialSavedItems
 }: ShoppingListMainProps) {
-  const [activeView, setActiveView] = useState("personal"); // "personal" or groupId
+  const STORAGE_KEY = 'shopping-list-last-view';
+  
+  // Initialize activeView from localStorage or default to "personal"
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window === 'undefined') return "personal";
+    
+    try {
+      const savedView = localStorage.getItem(STORAGE_KEY);
+      if (savedView) {
+        // Validate that the saved view still exists
+        const validGroupIds = userGroups.map(g => g.id);
+        if (savedView === "personal" || validGroupIds.includes(savedView)) {
+          return savedView;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load saved view:", error);
+    }
+    return "personal";
+  });
+  
   const [isPending, startTransition] = useTransition();
   const [showClearAlert, setShowClearAlert] = useState(false);
   const router = useRouter();
@@ -64,6 +84,15 @@ export function ShoppingListMain({
       [g.groupId]: { items: g.items, categories: g.categories }
     }), {} as Record<string, ViewData>)
   });
+
+  // Save activeView to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, activeView);
+    } catch (error) {
+      console.error("Failed to save view preference:", error);
+    }
+  }, [activeView]);
 
   // Sync with props when they change (server revalidation)
   useEffect(() => {
