@@ -81,6 +81,11 @@ export function ExpensesFilter({
   };
 
   const filtered = useMemo(() => {
+    // Parse and guard amount inputs once before filter
+    const minAmount = amountMin !== "" ? parseFloat(amountMin) : null;
+    const maxAmount = amountMax !== "" ? parseFloat(amountMax) : null;
+    const descTrimmed = description.trim().toLowerCase();
+
     return expenses.filter(expense => {
       // Source filter
       if (source === "personal" && expense.groupId !== null) return false;
@@ -90,17 +95,15 @@ export function ExpensesFilter({
       if (categoryId !== "all" && expense.categoryId !== categoryId) return false;
 
       // Description filter
-      if (
-        description.trim() !== "" &&
-        !expense.description?.toLowerCase().includes(description.trim().toLowerCase())
-      ) {
+      if (descTrimmed !== "" && !expense.description?.toLowerCase().includes(descTrimmed)) {
         return false;
       }
 
-      // Amount range filter
+      // Amount range filter with NaN guards
       const amount = parseFloat(expense.amount);
-      if (amountMin !== "" && amount < parseFloat(amountMin)) return false;
-      if (amountMax !== "" && amount > parseFloat(amountMax)) return false;
+      const amountFinite = Number.isFinite(amount) ? amount : 0;
+      if (Number.isFinite(minAmount) && amountFinite < minAmount!) return false;
+      if (Number.isFinite(maxAmount) && amountFinite > maxAmount!) return false;
 
       return true;
     });
@@ -158,21 +161,29 @@ export function ExpensesFilter({
         <div className="space-y-1.5">
           <Label>Amount Range</Label>
           <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              placeholder="Min"
-              value={amountMin}
-              onChange={e => setAmountMin(e.target.value)}
-              min={0}
-            />
+            <div className="flex-1">
+              <Label htmlFor="amount-min" className="sr-only">Minimum amount</Label>
+              <Input
+                id="amount-min"
+                type="number"
+                placeholder="Min"
+                value={amountMin}
+                onChange={e => setAmountMin(e.target.value)}
+                min={0}
+              />
+            </div>
             <span className="text-muted-foreground text-sm">–</span>
-            <Input
-              type="number"
-              placeholder="Max"
-              value={amountMax}
-              onChange={e => setAmountMax(e.target.value)}
-              min={0}
-            />
+            <div className="flex-1">
+              <Label htmlFor="amount-max" className="sr-only">Maximum amount</Label>
+              <Input
+                id="amount-max"
+                type="number"
+                placeholder="Max"
+                value={amountMax}
+                onChange={e => setAmountMax(e.target.value)}
+                min={0}
+              />
+            </div>
           </div>
         </div>
       </div>
