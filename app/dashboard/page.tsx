@@ -86,7 +86,6 @@ export default async function DashboardPage() {
         <Suspense fallback={<DashboardStatsSkeleton />}>
           <DashboardData
             userId={userId}
-            currentUserId={user.id}
             startOfMonth={startOfMonth}
             endOfMonth={endOfMonth}
           />
