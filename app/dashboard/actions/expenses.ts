@@ -121,6 +121,7 @@ export async function getExpenses(userId: string, params?: {
   startDate?: Date;
   endDate?: Date;
   userGroupIds?: string[]; // Optional: pass in to avoid duplicate queries
+  limit?: number;
 }) {
   try {
     // Get all groups the user is a member of (or use provided userGroupIds)
@@ -167,6 +168,7 @@ export async function getExpenses(userId: string, params?: {
         users: true,
       },
       orderBy: [{ date: "desc" }, { created_at: "desc" }],
+      ...(params?.limit ? { take: params.limit } : {}),
     });
 
     // Transform to match expected format
