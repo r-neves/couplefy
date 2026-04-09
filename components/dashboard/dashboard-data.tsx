@@ -10,14 +10,12 @@ import { getUserGroups } from "@/app/dashboard/actions/groups";
 
 interface DashboardDataProps {
   userId: string;
-  currentUserId: string;
   startOfMonth: Date;
   endOfMonth: Date;
 }
 
 export async function DashboardData({
   userId,
-  currentUserId,
   startOfMonth,
   endOfMonth,
 }: DashboardDataProps) {
@@ -49,7 +47,7 @@ export async function DashboardData({
           goals={goals}
           groups={userGroups}
           groupsWithMembers={userGroups}
-          currentUserId={currentUserId}
+          currentUserId={userId}
         />
       </div>
 
@@ -75,7 +73,7 @@ export async function DashboardData({
       </div>
 
       {/* Groups Management */}
-      <GroupsManagement userGroups={userGroups} currentUserId={currentUserId} />
+      <GroupsManagement userGroups={userGroups} currentUserId={userId} />
     </>
   );
 }
