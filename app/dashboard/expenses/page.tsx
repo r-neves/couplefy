@@ -209,7 +209,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card className="mb-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
+          <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
             <CardHeader>
               <CardTitle className="text-pink-900 dark:text-pink-100">Expenses Overview</CardTitle>
               <CardDescription>This month</CardDescription>
@@ -263,6 +263,28 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
             </CardContent>
           </Card>
 
+          <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-pink-900 dark:text-pink-100">Recent Expenses</CardTitle>
+                  <CardDescription>Your 3 most recent transactions</CardDescription>
+                </div>
+                <Link href="/dashboard/expenses/all">
+                  <Button variant="outline" size="sm">View All</Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ExpensesList
+                expenses={recentExpenses}
+                categories={categories}
+                groups={groups}
+                groupsWithMembers={groupsWithMembers}
+                currentUserId={userId}
+              />
+            </CardContent>
+          </Card>
 
           {personalExpenses.length > 0 && (
             <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
@@ -320,29 +342,6 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
             </div>
           )
         ))}
-
-        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-pink-900 dark:text-pink-100">Recent Expenses</CardTitle>
-                <CardDescription>Your 3 most recent transactions</CardDescription>
-              </div>
-              <Link href="/dashboard/expenses/all">
-                <Button variant="outline" size="sm">View All</Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ExpensesList
-              expenses={recentExpenses}
-              categories={categories}
-              groups={groups}
-              groupsWithMembers={groupsWithMembers}
-              currentUserId={userId}
-            />
-          </CardContent>
-        </Card>
 
         {/* Setup Instructions */}
         {categories.length === 0 && (
