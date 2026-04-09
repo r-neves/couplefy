@@ -26,10 +26,16 @@ ChartJS.register(
   ChartDataLabels
 );
 
+interface CategorySpending {
+  id: string;
+  name: string;
+  color: string;
+  total: number;
+}
+
 interface PersonSpending {
   name: string;
-  total: number;
-  color?: string;
+  categories: CategorySpending[];
 }
 
 interface PersonBreakdownChartProps {
@@ -66,43 +72,39 @@ export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
 
   const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-  const chartData = {
-    labels: data.map((item) => item.name),
-    datasets: [
-      {
-        label: "Amount Spent",
-        data: data.map((item) => item.total),
-        backgroundColor: data.map((item, index) => {
-          const colors = ['rgba(99, 102, 241, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(139, 92, 246, 0.8)'];
-          return item.color || colors[index % colors.length];
-        }),
-        borderColor: data.map((item, index) => {
-          const colors = ['rgb(99, 102, 241)', 'rgb(236, 72, 153)', 'rgb(139, 92, 246)'];
-          return item.color || colors[index % colors.length];
-        }),
-        borderWidth: 1,
-      },
-    ],
-  };
+  // Collect all unique categories across all people
+  const categoryMap = new Map<string, { name: string; color: string }>();
+  for (const person of data) {
+    for (const cat of person.categories) {
+      if (!categoryMap.has(cat.id)) {
+        categoryMap.set(cat.id, { name: cat.name, color: cat.color });
+      }
+    }
+  }
+  const allCategories = Array.from(categoryMap.entries());
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: function (context: any) {
-            const formattedValue = symbolAfter 
-              ? `${context.parsed.y.toFixed(2)}${currencySymbol}` 
-              : `${currencySymbol}${context.parsed.y.toFixed(2)}`;
-            return formattedValue;
-          },
-        },
-      },
+  // Totals per person for the top label
+  const personTotals = data.map(p => p.categories.reduce((sum, c) => sum + c.total, 0));
+
+  const datasets = allCategories.map(([catId, cat], datasetIndex) => {
+    const isLastCategory = (personIndex: number) => {
+      // Find the last dataset that has a non-zero value for this person
+      const personCatIds = new Set(data[personIndex].categories.map(c => c.id));
+      const lastIndex = allCategories.reduce((last, [id], idx) => personCatIds.has(id) ? idx : last, -1);
+      return datasetIndex === lastIndex;
+    };
+
+    return {
+      label: cat.name,
+      data: data.map(person => {
+        const match = person.categories.find(c => c.id === catId);
+        return match ? match.total : 0;
+      }),
+      backgroundColor: cat.color.startsWith('rgba') ? cat.color : `${cat.color}cc`,
+      borderColor: cat.color.startsWith('rgb') ? cat.color : cat.color,
+      borderWidth: 1,
       datalabels: {
+        display: (context: any) => isLastCategory(context.dataIndex) && personTotals[context.dataIndex] > 0,
         anchor: 'end' as const,
         align: 'top' as const,
         color: isDark ? '#e5e7eb' : '#374151',
@@ -110,13 +112,49 @@ export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
           weight: 'bold' as const,
           size: 13,
         },
-        formatter: (value: number) => {
-          return symbolAfter ? `${value.toFixed(2)}${currencySymbol}` : `${currencySymbol}${value.toFixed(2)}`;
+        formatter: (_value: number, context: any) => {
+          const total = personTotals[context.dataIndex];
+          return symbolAfter ? `${total.toFixed(2)}${currencySymbol}` : `${currencySymbol}${total.toFixed(2)}`;
         },
       },
+    };
+  });
+
+  const chartData = {
+    labels: data.map(p => p.name),
+    datasets,
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: isDark ? '#9ca3af' : '#6b7280',
+          boxWidth: 12,
+          padding: 12,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            const value = context.parsed.y;
+            if (value === 0) return null;
+            const formatted = symbolAfter
+              ? `${value.toFixed(2)}${currencySymbol}`
+              : `${currencySymbol}${value.toFixed(2)}`;
+            return `${context.dataset.label}: ${formatted}`;
+          },
+        },
+      },
+      datalabels: {},
     },
     scales: {
       y: {
+        stacked: true,
         beginAtZero: true,
         ticks: {
           callback: function (value: any) {
@@ -129,6 +167,7 @@ export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
         },
       },
       x: {
+        stacked: true,
         ticks: {
           color: isDark ? '#9ca3af' : '#6b7280',
         },
@@ -140,8 +179,8 @@ export function PersonBreakdownChart({ data }: PersonBreakdownChartProps) {
   };
 
   return (
-    <div className="h-64 w-full max-w-full overflow-hidden">
-      <Bar data={chartData} options={options} />
+    <div className="h-72 w-full max-w-full overflow-hidden">
+      <Bar data={chartData} options={options as any} />
     </div>
   );
 }

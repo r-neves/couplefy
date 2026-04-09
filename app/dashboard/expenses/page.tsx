@@ -148,26 +148,32 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
       return acc;
     }, {} as Record<string, { name: string; total: number; color: string }>);
 
-    // Per-person spending for this group
+    // Per-person spending with category breakdown for this group
     const personSpending = groupExpenses.reduce((acc, expense) => {
-      const userId = expense.user.id;
-      const userName = expense.user.name;
+      const personId = expense.user.id;
+      const personName = expense.user.name;
+      const categoryId = expense.category.id;
+      const categoryName = expense.category.name;
+      const categoryColor = expense.category.color || "#6366f1";
       const amount = parseFloat(expense.amount);
 
-      if (!acc[userId]) {
-        acc[userId] = {
-          name: userName,
-          total: 0,
-        };
+      if (!acc[personId]) {
+        acc[personId] = { name: personName, categories: {} };
       }
-      acc[userId].total += amount;
+      if (!acc[personId].categories[categoryId]) {
+        acc[personId].categories[categoryId] = { name: categoryName, color: categoryColor, total: 0 };
+      }
+      acc[personId].categories[categoryId].total += amount;
       return acc;
-    }, {} as Record<string, { name: string; total: number }>);
+    }, {} as Record<string, { name: string; categories: Record<string, { name: string; color: string; total: number }> }>);
 
     return {
       group,
       categoryData: Object.values(groupCategoryBreakdown),
-      personData: Object.values(personSpending),
+      personData: Object.values(personSpending).map(p => ({
+        name: p.name,
+        categories: Object.entries(p.categories).map(([id, c]) => ({ id, ...c })),
+      })),
       totalExpenses: groupExpenses.length,
       totalAmount: groupExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0),
     };
