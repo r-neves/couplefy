@@ -42,9 +42,8 @@ export default async function AllExpensesPage({ searchParams }: AllExpensesPageP
   }
 
   const groupsResult = await getUserGroups(userId);
-  const userGroups = groupsResult.success ? groupsResult.groups : [];
-  const userGroupIds = userGroups.map(g => g.id);
   const groupsWithMembers = groupsResult.success ? groupsResult.groups : [];
+  const userGroupIds = groupsWithMembers.map(g => g.id);
   const groups = groupsWithMembers.map(g => ({ id: g.id, name: g.name }));
 
   const [expensesResult, categoriesResult] = await Promise.all([
