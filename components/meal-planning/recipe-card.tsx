@@ -3,14 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Check, ChefHat, Edit2, Plus, Trash2, Users } from "lucide-react";
 import type { RecipeDTO } from "@/app/dashboard/actions/recipes-actions";
-import type { RecipeCategoryDTO } from "@/app/dashboard/actions/recipe-categories-actions";
 import { RecipeLinkChips } from "./recipe-link-chips";
 import { formatLastCooked } from "./format-last-cooked";
 import { cn } from "@/lib/utils";
 
 interface RecipeCardProps {
   recipe: RecipeDTO;
-  category?: RecipeCategoryDTO;
   inPlan: boolean;
   onTogglePlan: (recipe: RecipeDTO, nextInPlan: boolean) => void;
   onEdit: (recipe: RecipeDTO) => void;
@@ -19,7 +17,6 @@ interface RecipeCardProps {
 
 export function RecipeCard({
   recipe,
-  category,
   inPlan,
   onTogglePlan,
   onEdit,
@@ -34,17 +31,9 @@ export function RecipeCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {category?.icon ? (
-              <span className="text-base leading-none">{category.icon}</span>
-            ) : (
-              <div
-                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: category?.color || "#6366f1" }}
-              />
-            )}
-            <h4 className="truncate font-medium">{recipe.name}</h4>
-          </div>
+          {/* No category marker here: cards only ever render inside their own
+              category column, whose header already states the type. */}
+          <h4 className="truncate font-medium">{recipe.name}</h4>
 
           {recipe.notes && (
             <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">

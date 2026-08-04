@@ -73,7 +73,6 @@ export function RecipeLibrary({
                   <RecipeCard
                     key={recipe.id}
                     recipe={recipe}
-                    category={category}
                     inPlan={planRecipeIds.has(recipe.id)}
                     onTogglePlan={onTogglePlan}
                     onEdit={onEdit}
