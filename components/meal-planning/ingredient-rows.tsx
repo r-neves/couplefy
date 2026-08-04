@@ -3,8 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { ClipboardPaste, Plus, X } from "lucide-react";
 import { SavedItemCombobox, type ShoppingCategoryLite } from "./saved-item-combobox";
+import { ImportIngredientsDialog } from "./import-ingredients-dialog";
 import type { CatalogItemDTO } from "@/app/dashboard/actions/shopping-list-actions";
 
 export interface IngredientRow {
@@ -38,6 +40,14 @@ export function IngredientRows({
   shoppingCategories,
   onCreateCatalogItem,
 }: IngredientRowsProps) {
+  const [importOpen, setImportOpen] = useState(false);
+
+  /** Append imported rows, dropping a single leading blank row. */
+  const handleImport = (imported: IngredientRow[]) => {
+    const existing = rows.filter((row) => row.rawName.trim());
+    onChange([...existing, ...imported].slice(0, MAX_INGREDIENTS));
+  };
+
   const updateRow = (index: number, patch: Partial<IngredientRow>) => {
     onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
@@ -52,18 +62,30 @@ export function IngredientRows({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-1">
         <Label>Ingredients (optional)</Label>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange([...rows, { ...EMPTY_INGREDIENT }])}
-          disabled={rows.length >= MAX_INGREDIENTS}
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          Add ingredient
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setImportOpen(true)}
+            disabled={rows.length >= MAX_INGREDIENTS}
+          >
+            <ClipboardPaste className="mr-1 h-4 w-4" />
+            Import
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange([...rows, { ...EMPTY_INGREDIENT }])}
+            disabled={rows.length >= MAX_INGREDIENTS}
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Add ingredient
+          </Button>
+        </div>
       </div>
 
       {shoppingCategories.length === 0 && (
@@ -130,6 +152,13 @@ export function IngredientRows({
           the catalog. Linked ones can be pushed to your shopping list.
         </p>
       )}
+
+      <ImportIngredientsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        catalogItems={catalogItems}
+        onImport={handleImport}
+      />
     </div>
   );
 }
