@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, ShoppingCart } from "lucide-react";
+import { Zap, ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { CreateExpenseDialog } from "@/components/expenses/create-expense-dialog";
 import { CreateSavingDialog } from "@/components/savings/create-saving-dialog";
 import Link from "next/link";
@@ -48,6 +48,19 @@ export function QuickActions({ categories, goals, groups, groupsWithMembers, cur
             <div className="text-left">
               <div className="font-semibold text-sm text-green-900 dark:text-green-100">Shopping List</div>
               <div className="text-xs text-green-700 dark:text-green-300">Manage your shopping items</div>
+            </div>
+          </Button>
+        </Link>
+
+        <Link href="/dashboard/meal-planning" className="block">
+          <Button
+            className="w-full justify-start gap-3 h-auto py-4 px-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 border-amber-200 dark:border-amber-900/30 hover:shadow-md hover:from-amber-100 hover:to-amber-200 dark:hover:from-amber-900/40 dark:hover:to-amber-800/40 transition-all"
+            variant="outline"
+          >
+            <UtensilsCrossed className="h-6 w-6 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="text-left">
+              <div className="font-semibold text-sm text-amber-900 dark:text-amber-100">Meal Planning</div>
+              <div className="text-xs text-amber-700 dark:text-amber-300">Plan meals from your recipes</div>
             </div>
           </Button>
         </Link>

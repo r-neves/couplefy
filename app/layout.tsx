@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import "./globals.css";
 import { PWALifecycle } from "@/components/pwa/pwa-lifecycle";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Configure Inter font with display swap for faster FCP
@@ -54,6 +55,7 @@ export default function RootLayout({
         >
           <PWALifecycle />
           {children}
+          <Toaster />
         </ThemeProvider>
         <SpeedInsights />
       </body>
