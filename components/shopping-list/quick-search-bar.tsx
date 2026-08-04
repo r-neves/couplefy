@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { normalizeText } from "@/lib/utils/text";
 
 interface QuickSearchBarProps {
   savedItems: any[];
@@ -12,14 +13,6 @@ interface QuickSearchBarProps {
   onItemSelected: (savedItemId: string, existingItem?: any) => Promise<void>;
   disabled?: boolean;
 }
-
-// Helper function to normalize text by removing accents/diacritics
-const normalizeText = (text: string): string => {
-  return text
-    .normalize('NFD') // Normalize to decomposed form (separates base characters from diacritics)
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
-    .toLowerCase();
-};
 
 export function QuickSearchBar({
   savedItems,

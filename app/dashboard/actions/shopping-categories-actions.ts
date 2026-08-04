@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
+import { assertScopeAccess, scopeWhere } from "@/lib/utils/scope";
 
 // Core functions usually accept userId directly so they can be reused internally
 
@@ -72,6 +73,38 @@ export async function getShoppingCategories(userId: string, groupId?: string) {
     return { success: true, categories };
   } catch (error) {
     console.error("Error getting shopping categories:", error);
+    return { error: "Failed to get shopping categories" };
+  }
+}
+
+/**
+ * Shopping categories for exactly one scope. `getShoppingCategories` returns
+ * personal plus every group the user belongs to; meal planning needs the strict
+ * version so a new catalog entry lands under a category from the same board.
+ */
+export async function getShoppingCategoriesInScope(userId: string, groupId?: string) {
+  try {
+    const access = await assertScopeAccess(userId, groupId);
+    if ("error" in access) return access;
+
+    const items = await prisma.shopping_categories.findMany({
+      where: scopeWhere(userId, groupId),
+      orderBy: { display_order: "asc" },
+    });
+
+    const categories = items.map((cat) => ({
+      id: cat.id,
+      userId: cat.user_id,
+      groupId: cat.group_id,
+      name: cat.name,
+      color: cat.color,
+      icon: cat.icon,
+      displayOrder: cat.display_order,
+    }));
+
+    return { success: true as const, categories };
+  } catch (error) {
+    console.error("Error getting shopping categories in scope:", error);
     return { error: "Failed to get shopping categories" };
   }
 }

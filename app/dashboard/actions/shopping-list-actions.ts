@@ -4,7 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUserId } from "@/lib/utils/user";
 import { getUserGroupIds } from "@/lib/utils/groups";
+import { assertScopeAccess, scopeWhere } from "@/lib/utils/scope";
+import { getSavedItemDisplayName } from "@/lib/utils/saved-items";
 import { Prisma } from "@prisma/client";
+
+export interface CatalogItemDTO {
+  id: string;
+  names: Record<string, string>;
+  displayName: string;
+  categoryId: string;
+  categoryName: string | null;
+  categoryColor: string | null;
+  categoryIcon: string | null;
+}
 
 // --- Shopping List Items ---
 
@@ -169,9 +181,60 @@ export async function getSavedItems(userId: string, groupId?: string) {
   }
 }
 
-export async function createSavedItem(data: {names: Record<string, string>, categoryId: string, groupId?: string}, userId: string) {
+/**
+ * Saved items for exactly one scope — personal OR one group, never both.
+ *
+ * `getSavedItems` above deliberately returns everything the user can reach for
+ * the shopping list's search bar. Meal planning needs the strict version: a
+ * personal recipe must not link an ingredient to a group's catalog entry.
+ */
+export async function getSavedItemsInScope(userId: string, groupId?: string) {
   try {
-    await prisma.saved_items.create({
+    const access = await assertScopeAccess(userId, groupId);
+    if ("error" in access) return access;
+
+    const items = await prisma.saved_items.findMany({
+      where: scopeWhere(userId, groupId),
+      include: { shopping_categories: true },
+    });
+
+    const catalogItems: CatalogItemDTO[] = items.map((item) => {
+      const names = (item.names ?? {}) as Record<string, string>;
+
+      return {
+        id: item.id,
+        names,
+        displayName: getSavedItemDisplayName(names),
+        categoryId: item.category_id,
+        categoryName: item.shopping_categories?.name ?? null,
+        categoryColor: item.shopping_categories?.color ?? null,
+        categoryIcon: item.shopping_categories?.icon ?? null,
+      };
+    });
+
+    catalogItems.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+    return { success: true as const, catalogItems };
+  } catch (error) {
+    console.error("Error fetching saved items in scope:", error);
+    return { error: "Failed to fetch catalog items" };
+  }
+}
+
+export async function getSavedItemsInScopeFromClient(groupId?: string) {
+  const auth = await getAuthenticatedUserId();
+  if ("error" in auth) return auth;
+
+  return getSavedItemsInScope(auth.userId, groupId);
+}
+
+export async function createSavedItem(data: {names: Record<string, string>, categoryId: string, groupId?: string}, userId: string) {
+  // Verify the caller may write to this scope before trusting groupId.
+  const access = await assertScopeAccess(userId, data.groupId);
+  if ("error" in access) return access;
+
+  try {
+    const savedItem = await prisma.saved_items.create({
       data: {
         names: data.names as unknown as any,
         category_id: data.categoryId,
@@ -181,7 +244,8 @@ export async function createSavedItem(data: {names: Record<string, string>, cate
     });
 
     revalidatePath("/dashboard/shopping-list");
-    return { success: true };
+    revalidatePath("/dashboard/meal-planning");
+    return { success: true as const, savedItemId: savedItem.id };
   } catch (error) {
     console.error("Error creating saved item:", error);
     return { error: "Failed to create saved item" };
