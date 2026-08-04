@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +23,8 @@ import { toggleShoppingItemFromClient, deleteShoppingItemFromClient, createShopp
 import { useRouter } from "next/navigation";
 import { Users, User, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { getScopeOptions, resolveScope, PERSONAL_SCOPE } from "@/lib/utils/scopes";
 import { cn } from "@/lib/utils";
 
 interface ShoppingListMainProps {
@@ -48,26 +50,21 @@ export function ShoppingListMain({
   initialSavedItems
 }: ShoppingListMainProps) {
   const STORAGE_KEY = 'shopping-list-last-view';
-  
-  // Initialize activeView from localStorage or default to "personal"
+
+  const scopeOptions = useMemo(() => getScopeOptions(userGroups), [userGroups]);
+  const showScopeSelector = scopeOptions.length > 1;
+
   const [activeView, setActiveView] = useState(() => {
-    if (typeof window === 'undefined') return "personal";
-    
+    if (typeof window === 'undefined') return scopeOptions[0]?.id ?? PERSONAL_SCOPE;
+
     try {
-      const savedView = localStorage.getItem(STORAGE_KEY);
-      if (savedView) {
-        // Validate that the saved view still exists
-        const validGroupIds = userGroups.map(g => g.id);
-        if (savedView === "personal" || validGroupIds.includes(savedView)) {
-          return savedView;
-        }
-      }
+      return resolveScope(localStorage.getItem(STORAGE_KEY), scopeOptions);
     } catch (error) {
       console.error("Failed to load saved view:", error);
+      return scopeOptions[0]?.id ?? PERSONAL_SCOPE;
     }
-    return "personal";
   });
-  
+
   const [isPending, startTransition] = useTransition();
   const [showClearAlert, setShowClearAlert] = useState(false);
   const router = useRouter();
@@ -203,7 +200,7 @@ export function ShoppingListMain({
       formData.append("quantity", "1");
       formData.append("unit", "");
       formData.append("categoryId", savedItem.category_id);
-      if (activeView !== "personal") formData.append("groupId", activeView);
+      if (activeView !== PERSONAL_SCOPE) formData.append("groupId", activeView);
 
       const result = await createShoppingListItemFromClient(formData);
       if (result.error) throw new Error(result.error);
@@ -228,7 +225,7 @@ export function ShoppingListMain({
     }));
 
     try {
-      const result = await clearShoppingListFromClient(activeView === "personal" ? undefined : activeView);
+      const result = await clearShoppingListFromClient(activeView === PERSONAL_SCOPE ? undefined : activeView);
       if (result.error) throw new Error(result.error);
       router.refresh();
     } catch (error) {
@@ -249,29 +246,24 @@ export function ShoppingListMain({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* View Selector */}
+      {/* View Selector — only worth the space once there are several boards */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg overflow-x-auto">
-           <Button
-             variant={activeView === "personal" ? "secondary" : "ghost"}
-             size="default"
-             onClick={() => setActiveView("personal")}
-             className="gap-2 whitespace-nowrap h-11"
-           >
-             <User className="h-4 w-4" /> Personal
-           </Button>
-           {userGroups.map(group => (
+        {showScopeSelector && (
+          <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg overflow-x-auto">
+            {scopeOptions.map(option => (
               <Button
-                key={group.id}
-                variant={activeView === group.id ? "secondary" : "ghost"}
+                key={option.id}
+                variant={activeView === option.id ? "secondary" : "ghost"}
                 size="default"
-                onClick={() => setActiveView(group.id)}
+                onClick={() => setActiveView(option.id)}
                 className="gap-2 whitespace-nowrap h-11"
               >
-                <Users className="h-4 w-4" /> {group.name}
+                {option.isGroup ? <Users className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                {option.label}
               </Button>
-           ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <QuickSearchBar
           savedItems={initialSavedItems}
@@ -284,7 +276,7 @@ export function ShoppingListMain({
             <ManageShoppingCategories
               categories={currentData.categories}
               userId={userId}
-              groupId={activeView === "personal" ? undefined : activeView}
+              groupId={activeView === PERSONAL_SCOPE ? undefined : activeView}
             />
             <ManageSavedItems
               savedItems={initialSavedItems}
@@ -312,7 +304,7 @@ export function ShoppingListMain({
             </Button>
             <AddItemDialog
                 userId={userId}
-                groupId={activeView === "personal" ? undefined : activeView}
+                groupId={activeView === PERSONAL_SCOPE ? undefined : activeView}
                 categories={currentData.categories}
                 onItemAdded={() => {
                    router.refresh();
@@ -325,7 +317,7 @@ export function ShoppingListMain({
          <CardHeader>
            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
              <div>
-                <CardTitle className="text-lg sm:text-xl">{activeView === "personal" ? "Personal Shopping List" : 
+                <CardTitle className="text-lg sm:text-xl">{activeView === PERSONAL_SCOPE ? "Personal Shopping List" : 
                     userGroups.find(g => g.id === activeView)?.name + " Shopping List"
                 }</CardTitle>
                 <CardDescription className="text-sm">
@@ -350,7 +342,7 @@ export function ShoppingListMain({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear Shopping List?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all items from your {activeView === "personal" ? "personal" : "group"} shopping list. This action cannot be undone.
+              This will remove all items from your {activeView === PERSONAL_SCOPE ? "personal" : "group"} shopping list. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -367,6 +359,8 @@ export function ShoppingListMain({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ScrollToTop />
     </div>
   );
 }

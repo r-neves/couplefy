@@ -57,6 +57,8 @@ import { RemoveFromPlanDialog } from "./remove-from-plan-dialog";
 import type { CatalogItemDTO } from "@/app/dashboard/actions/shopping-list-actions";
 import type { ShoppingCategoryLite } from "./saved-item-combobox";
 import { matchesText } from "@/lib/utils/text";
+import { getScopeOptions, resolveScope, PERSONAL_SCOPE } from "@/lib/utils/scopes";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { cn } from "@/lib/utils";
 
 export interface MealPlanningScopeData {
@@ -84,7 +86,10 @@ export function MealPlanningMain({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [activeView, setActiveView] = useState("personal");
+  const scopeOptions = useMemo(() => getScopeOptions(userGroups), [userGroups]);
+  const showScopeSelector = scopeOptions.length > 1;
+
+  const [activeView, setActiveView] = useState(() => scopeOptions[0]?.id ?? PERSONAL_SCOPE);
   const [activeTab, setActiveTab] = useState<Tab>("plan");
   const [search, setSearch] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState("all");
@@ -122,15 +127,11 @@ export function MealPlanningMain({
   // match on the first render.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) return;
-      if (saved === "personal" || userGroups.some((group) => group.id === saved)) {
-        setActiveView(saved);
-      }
+      setActiveView(resolveScope(localStorage.getItem(STORAGE_KEY), scopeOptions));
     } catch (error) {
       console.error("Failed to load saved view:", error);
     }
-  }, [userGroups]);
+  }, [scopeOptions]);
 
   useEffect(() => {
     try {
@@ -160,7 +161,7 @@ export function MealPlanningMain({
     catalogItems: [],
     shoppingCategories: [],
   };
-  const groupId = activeView === "personal" ? undefined : activeView;
+  const groupId = activeView === PERSONAL_SCOPE ? undefined : activeView;
 
   const planRecipeIds = useMemo(
     () => new Set(planByScope[activeView] ?? []),
@@ -386,28 +387,27 @@ export function MealPlanningMain({
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3">
-        {/* Board selector */}
-        <div className="flex items-center gap-2 overflow-x-auto rounded-lg bg-muted/50 p-1.5">
-          <Button
-            variant={activeView === "personal" ? "secondary" : "ghost"}
-            size="default"
-            onClick={() => setActiveView("personal")}
-            className="h-11 gap-2 whitespace-nowrap"
-          >
-            <User className="h-4 w-4" /> Personal
-          </Button>
-          {userGroups.map((group) => (
-            <Button
-              key={group.id}
-              variant={activeView === group.id ? "secondary" : "ghost"}
-              size="default"
-              onClick={() => setActiveView(group.id)}
-              className="h-11 gap-2 whitespace-nowrap"
-            >
-              <Users className="h-4 w-4" /> {group.name}
-            </Button>
-          ))}
-        </div>
+        {/* Board selector — only worth the space once there are several boards */}
+        {showScopeSelector && (
+          <div className="flex items-center gap-2 overflow-x-auto rounded-lg bg-muted/50 p-1.5">
+            {scopeOptions.map((option) => (
+              <Button
+                key={option.id}
+                variant={activeView === option.id ? "secondary" : "ghost"}
+                size="default"
+                onClick={() => setActiveView(option.id)}
+                className="h-11 gap-2 whitespace-nowrap"
+              >
+                {option.isGroup ? (
+                  <Users className="h-4 w-4" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Plan / Library */}
         <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-1.5">
@@ -663,6 +663,8 @@ export function MealPlanningMain({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ScrollToTop />
     </div>
   );
 }
