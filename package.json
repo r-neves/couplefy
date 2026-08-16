@@ -24,6 +24,9 @@
   },
   "homepage": "https://github.com/r-neves/couplefy#readme",
   "description": "A set of tools to help couples/groups manage their life together",
+  "engines": {
+    "node": "24.x"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@opentelemetry/api": "^1.9.1",
