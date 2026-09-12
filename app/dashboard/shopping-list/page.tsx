@@ -91,7 +91,7 @@ export default async function ShoppingListPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-4">
-              <Link href="/dashboard">
+              <Link href="/dashboard" className="hidden md:block">
                 <Button variant="outline" size="sm">← Back</Button>
               </Link>
               <h1 className="text-xl sm:text-2xl font-bold">Shopping List</h1>
@@ -104,7 +104,7 @@ export default async function ShoppingListPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
         <ShoppingListMain 
             userId={userId}
             userGroups={userGroups}

@@ -1,3 +1,4 @@
+import { MobileNavBar } from "@/components/navigation/mobile-nav-bar";
 import { createClient } from "@/lib/supabase/server";
 import { getDbUserWithStatus } from "@/lib/utils/user";
 import { redirect } from "next/navigation";
@@ -30,5 +31,10 @@ export default async function DashboardLayout({
     redirect("/access/pending");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <MobileNavBar />
+    </>
+  );
 }
