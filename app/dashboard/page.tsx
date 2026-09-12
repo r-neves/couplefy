@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
         {/* Welcome section - loads instantly */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">

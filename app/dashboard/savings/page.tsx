@@ -132,7 +132,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-4">
-              <Link href="/dashboard">
+              <Link href="/dashboard" className="hidden md:block">
                 <Button variant="outline" size="sm">← Back</Button>
               </Link>
               <h1 className="text-xl sm:text-2xl font-bold">Savings</h1>
@@ -149,7 +149,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
         {/* Add Saving Button - Prominent at top */}
         <div className="mb-6">
           <CreateSavingDialog

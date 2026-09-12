@@ -89,7 +89,7 @@ export default async function AllExpensesPage({ searchParams }: AllExpensesPageP
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
         <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-pink-200 dark:border-pink-800/50">
           <CardHeader>
             <CardTitle className="text-pink-900 dark:text-pink-100">Expenses</CardTitle>
