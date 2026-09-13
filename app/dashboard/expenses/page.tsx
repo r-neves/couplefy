@@ -203,7 +203,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
+      <main className="container mx-auto px-4 pt-8 pb-28 md:pb-8">
         {/* Add Expense Button - Prominent at top */}
         <div className="mb-6">
           <CreateExpenseDialog

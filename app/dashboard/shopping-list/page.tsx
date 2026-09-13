@@ -104,7 +104,7 @@ export default async function ShoppingListPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
+      <main className="container mx-auto px-4 pt-8 pb-28 md:pb-8">
         <ShoppingListMain 
             userId={userId}
             userGroups={userGroups}

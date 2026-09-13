@@ -36,7 +36,7 @@ export default async function AdminPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
+    <div className="container mx-auto px-4 pt-8 pb-28 md:pb-8">
       <div className="mb-6">
         <Link href="/dashboard">
           <Button variant="outline" size="sm" className="gap-2">

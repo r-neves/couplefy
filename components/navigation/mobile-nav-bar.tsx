@@ -80,7 +80,7 @@ export function MobileNavBar() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-1 px-1",
+                  "flex h-[4.5rem] flex-col items-center justify-center gap-1.5 px-1",
                   "transition-colors focus-visible:outline-none focus-visible:ring-2",
                   "focus-visible:ring-inset focus-visible:ring-ring",
                   active
@@ -89,12 +89,12 @@ export function MobileNavBar() {
                 )}
               >
                 <Icon
-                  className={cn("h-5 w-5 shrink-0", active && "stroke-[2.5]")}
+                  className={cn("h-6 w-6 shrink-0", active && "stroke-[2.5]")}
                   aria-hidden="true"
                 />
                 <span
                   className={cn(
-                    "text-[10px] leading-none",
+                    "text-[11px] leading-none",
                     active ? "font-semibold" : "font-medium"
                   )}
                 >

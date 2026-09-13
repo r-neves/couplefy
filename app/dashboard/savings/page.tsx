@@ -149,7 +149,7 @@ export default async function SavingsPage({ searchParams }: SavingsPageProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pt-8 pb-24 md:pb-8">
+      <main className="container mx-auto px-4 pt-8 pb-28 md:pb-8">
         {/* Add Saving Button - Prominent at top */}
         <div className="mb-6">
           <CreateSavingDialog
