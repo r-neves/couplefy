@@ -13,6 +13,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       position="bottom-center"
+      // Clears the mobile bottom nav bar and the safe-area inset below it.
+      mobileOffset={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
       toastOptions={{
         classNames: {
           toast:
