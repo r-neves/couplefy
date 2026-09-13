@@ -33,6 +33,9 @@ export const viewport: Viewport = {
   themeColor: "#ec4899",
   width: "device-width",
   initialScale: 1,
+  // Without this, iOS reports env(safe-area-inset-*) as 0, so the mobile nav
+  // bar sits on top of the home indicator.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
