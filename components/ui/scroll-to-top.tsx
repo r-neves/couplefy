@@ -47,7 +47,7 @@ export function ScrollToTop({ threshold = 400 }: ScrollToTopProps) {
         "border bg-background/90 shadow-lg backdrop-blur transition-all",
         "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         // Clears the mobile bottom nav bar on phones, the safe-area inset above.
-        "bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-[calc(1rem+env(safe-area-inset-bottom))]",
+        "bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-[calc(1rem+env(safe-area-inset-bottom))]",
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
       )}
     >
