@@ -365,6 +365,11 @@ export function MealPlanningMain({
     }
   };
 
+  const openRecipeEditor = (recipe: RecipeDTO) => {
+    setEditingRecipe(recipe);
+    setRecipeDialogOpen(true);
+  };
+
   const handleDeleteRecipe = async () => {
     if (!deletingRecipe) return;
 
@@ -553,6 +558,7 @@ export function MealPlanningMain({
           recipes={planRecipes}
           categories={currentData.categories}
           onCooked={handleCooked}
+          onEdit={openRecipeEditor}
           onRemove={(recipe) => handleTogglePlan(recipe, false)}
           onAddToList={(recipe) => setAddToListRecipe(recipe)}
           onBrowseLibrary={() => setActiveTab("library")}
@@ -565,10 +571,7 @@ export function MealPlanningMain({
             activeCategoryId={activeCategoryId}
             planRecipeIds={planRecipeIds}
             onTogglePlan={handleTogglePlan}
-            onEdit={(recipe) => {
-              setEditingRecipe(recipe);
-              setRecipeDialogOpen(true);
-            }}
+            onEdit={openRecipeEditor}
             onDelete={(recipe) => setDeletingRecipe(recipe)}
           />
 
