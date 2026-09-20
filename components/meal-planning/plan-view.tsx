@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChefHat, ShoppingCart, UtensilsCrossed, Users, X } from "lucide-react";
+import { ChefHat, Edit2, ShoppingCart, UtensilsCrossed, Users, X } from "lucide-react";
 import type { RecipeDTO } from "@/app/dashboard/actions/recipes-actions";
 import type { RecipeCategoryDTO } from "@/app/dashboard/actions/recipe-categories-actions";
 import { RecipeLinkChips } from "./recipe-link-chips";
@@ -12,6 +12,7 @@ interface PlanViewProps {
   recipes: RecipeDTO[];
   categories: RecipeCategoryDTO[];
   onCooked: (recipe: RecipeDTO) => void;
+  onEdit: (recipe: RecipeDTO) => void;
   onRemove: (recipe: RecipeDTO) => void;
   onAddToList: (recipe: RecipeDTO) => void;
   onBrowseLibrary: () => void;
@@ -21,6 +22,7 @@ export function PlanView({
   recipes,
   categories,
   onCooked,
+  onEdit,
   onRemove,
   onAddToList,
   onBrowseLibrary,
@@ -118,6 +120,15 @@ export function PlanView({
                   >
                     <ChefHat className="mr-2 h-4 w-4" />
                     Cooked
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 flex-shrink-0 text-muted-foreground hover:text-primary"
+                    onClick={() => onEdit(recipe)}
+                    aria-label={`Edit ${recipe.name}`}
+                  >
+                    <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
